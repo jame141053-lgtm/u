@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ร้านกู้ชีพงานค้าง</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&family=Kanit:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink: #e91e8c;
+    --pink-light: #f472b6;
+    --pink-pale: #fce7f3;
+    --pink-bg: #fff0f7;
+    --pink-dark: #be185d;
+    --green: #16a34a;
+    --green-bright: #22c55e;
+    --white: #ffffff;
+    --gray: #374151;
+    --border: #f9a8d4;
+    --text: #111827;
+    --text-muted: #4b5563;
+    --gold: #d97706;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Sarabun', sans-serif; background: var(--pink-bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+
+  header {
+    position: relative; text-align: center; padding: 60px 20px 50px;
+    background: linear-gradient(135deg, #fff0f7 0%, #fce7f3 50%, #fdf2f8 100%);
+    border-bottom: 4px solid var(--pink-light);
+  }
+  .badge {
+    display: inline-block; background: var(--pink-dark); color: #fff;
+    font-family: 'Kanit', sans-serif; font-size: 11px; font-weight: 700;
+    padding: 5px 18px; border-radius: 20px; margin-bottom: 18px;
+  }
+  h1 { font-family: 'Kanit', sans-serif; font-size: clamp(2.2rem, 6vw, 4rem); font-weight: 900; color: var(--text); }
+  h1 span { color: var(--pink); }
+
+  .section { padding: 40px 20px; max-width: 1000px; margin: 0 auto; }
+  .section-title { font-family: 'Kanit', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--pink-dark); text-align: center; }
+
+  .reviews-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 30px; }
+  .review-card { background: var(--white); border: 2px solid var(--border); border-radius: 16px; padding: 24px; position: relative; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+  .reviewer-name { font-weight: 800; color: var(--text); }
+  .review-text { color: var(--gray); font-weight: 500; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+  .modal-overlay.active { display: flex; }
+  .modal { background: var(--white); border-radius: 20px; padding: 30px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; }
+
+  .form-label { display: block; font-weight: 700; color: var(--pink-dark); margin: 15px 0 5px; }
+  .form-input, select { width: 100%; border: 2px solid var(--border); border-radius: 10px; padding: 12px; font-size: 1rem; outline: none; font-family: 'Sarabun'; }
+
+  .job-list { display: flex; flex-direction: column; gap: 10px; }
+  .job-option { border: 2px solid var(--border); border-radius: 12px; padding: 15px; cursor: pointer; background: white; transition: 0.2s; }
+  .job-option:hover { border-color: var(--pink); background: var(--pink-bg); }
+  .job-option.selected { border-color: var(--pink-dark); background: var(--pink-pale); border-width: 3px; }
+  .price-tag { display: block; font-size: 0.85rem; color: var(--pink-dark); font-weight: 600; margin-top: 5px; }
+
+  .payment-qr { display: none; text-align: center; margin-top: 15px; padding: 15px; border: 2px dashed var(--pink); border-radius: 10px; }
+  .payment-qr img { width: 100%; max-width: 250px; border-radius: 10px; }
+
+  .submit-btn { width: 100%; background: var(--green); color: #fff; border: none; border-radius: 50px; padding: 15px; font-weight: 700; font-family: 'Kanit'; cursor: pointer; margin-top: 20px; font-size: 1.1rem; transition: 0.2s; }
+  .submit-btn:hover { transform: scale(1.02); opacity: 0.9; }
+  
+  footer { text-align: center; padding: 40px 20px; border-top: 1px solid var(--border); color: var(--text-muted); background: white; }
+  #admin-trigger { cursor: pointer; opacity: 0.8; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="badge">🌸 บริการด่วน · รับงานทุกชิ้น</div>
+  <h1>ร้าน<span>กู้ชีพ</span>งานค้าง</h1>
+  <p style="font-weight: 700; color: var(--gray);">ส่งงานช้า? ค้างมานาน? เราช่วยได้ · รวดเร็ว · มืออาชีพ</p>
+  <button class="submit-btn" style="max-width: 250px;" onclick="openModal()">🚀 เริ่มจ้างงาน</button>
+</header>
+
+<div class="section">
+  <div class="section-title">💬 รีวิวจากลูกค้า</div>
+  <div class="reviews-grid" id="reviews-container"></div>
+  <button class="submit-btn" style="background: var(--pink); max-width: 200px; display:block; margin: 20px auto;" onclick="alert('ระบบเขียนรีวิวกำลังพัฒนาครับ')">✏️ เขียนรีวิว</button>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <span style="position:absolute; right:20px; top:15px; cursor:pointer; font-size:1.5rem;" onclick="closeModal()">✕</span>
+    <h2 style="font-family:'Kanit'; margin-bottom:10px;">📋 จ้างงาน</h2>
+    
+    <label class="form-label">ชื่อ-นามสกุล</label>
+    <input class="form-input" id="custName" type="text" placeholder="ชื่อของคุณ">
+    
+    <label class="form-label">เลือกประเภทงาน</label>
+    <div class="job-list">
+      <div class="job-option" onclick="selectJob(this,'งานแก้ข้อสอบ','จดน้อย 7บ. / เยอะ 12บ. / วาดรูป +4บ.')">
+        <strong>📝 งานแก้ข้อสอบ</strong>
+        <span class="price-tag">เรท: น้อย 7.- / เยอะ 12.- / วาดรูป +4.-</span>
+      </div>
+      <div class="job-option" onclick="selectJob(this,'งานแก้ 0 ร มส','จดน้อย 9บ. / เยอะ 14บ. / วาดรูป +6บ.')">
+        <strong>🔴 แก้ 0 ร มส</strong>
+        <span class="price-tag">เรท: น้อย 9.- / เยอะ 14.- / วาดรูป +6.-</span>
+      </div>
+      <div class="job-option" onclick="selectJob(this,'งานค้าง','จดน้อย 7บ. / เยอะ 12บ. / วาดรูป +4บ.')">
+        <strong>⏰ งานค้างทั่วไป</strong>
+        <span class="price-tag">เรท: น้อย 7.- / เยอะ 12.- / วาดรูป +4.-</span>
+      </div>
+      <div class="job-option" onclick="selectJob(this,'ใบงาน Canva','น้อย 9บ. / เยอะ 14บ.')">
+        <strong>🎨 ใบงาน Canva</strong>
+        <span class="price-tag">เรท: น้อย 9.- / เยอะ 14.-</span>
+      </div>
+      <div class="job-option" onclick="selectJob(this,'สไลด์ Canva','หน้าละ 9-14บ.')">
+        <strong>🖥️ สไลด์ Canva</strong>
+        <span class="price-tag">เรท: หน้าละ 9.- ถึง 14.-</span>
+      </div>
+    </div>
+
+    <label class="form-label">ช่องทางการชำระเงิน</label>
+    <select id="payMethod" onchange="togglePay()">
+      <option value="cash">เงินสด (จ่ายหน้างาน)</option>
+      <option value="transfer">เงินโอน (สแกน QR)</option>
+    </select>
+
+    <div id="qr-area" class="payment-qr">
+      <p style="font-weight:700; color:var(--pink-dark); margin-bottom:10px;">สแกนเพื่อโอนเงิน</p>
+      <img src="https://raw.githubusercontent.com/jame141053-lgtm/N/main/89dadac2-5876-4690-aeb0-11b4a5d99066.jpeg" alt="QR Code">
+    </div>
+
+    <p id="cash-note" style="margin-top:10px; font-size:0.85rem; color:red; font-weight:700;">
+      * โปรดนำเงินมาจ่ายให้ผมภายใน 1-2 วันหลังจากสั่งงานนะครับ
+    </p>
+
+    <button class="submit-btn" onclick="submitJob()">✅ ยืนยันการสั่งงาน</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <h2 style="font-family:'Kanit'">⚙️ ตั้งค่าระบบ</h2>
+    <label class="form-label">Discord Webhook URL</label>
+    <input class="form-input" id="webhook-input" type="text">
+    <button class="submit-btn" onclick="saveSettings()">บันทึก</button>
+    <button class="submit-btn" style="background:#gray; margin-top:10px;" onclick="closeSettings()">ปิด</button>
+  </div>
+</div>
+
+<footer>
+  <p>© 2024 <span id="admin-trigger" onclick="checkAdmin()">ร้านกู้ชีพงานค้าง</span> · ทำด้วยใจ ส่งทันเวลา 🌸</p>
+</footer>
+
+<script>
+  let selectedJobName = '';
+  let selectedJobRate = '';
+  const defaultWebhook = 'https://discord.com/api/webhooks/1498656699513438259/E-8yKZDNxMnxTErrfIS0DLUuC6SGSkSUfyyKxgnlpGLZtFWsFp29VEMaxFmn26zvUc3l';
+  let webhookURL = localStorage.getItem('webhookURL') || defaultWebhook;
+
+  function openModal() { document.getElementById('modal').classList.add('active'); }
+  function closeModal() { document.getElementById('modal').classList.remove('active'); }
+
+  function selectJob(el, name, rate) {
+    document.querySelectorAll('.job-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedJobName = name;
+    selectedJobRate = rate;
+  }
+
+  function togglePay() {
+    const method = document.getElementById('payMethod').value;
+    document.getElementById('qr-area').style.display = (method === 'transfer') ? 'block' : 'none';
+    document.getElementById('cash-note').style.display = (method === 'cash') ? 'block' : 'none';
+  }
+
+  async function submitJob() {
+    const name = document.getElementById('custName').value.trim();
+    const pay = document.getElementById('payMethod').value;
+    
+    if(!name || !selectedJobName) { alert('กรุณากรอกชื่อและเลือกประเภทงานครับ'); return; }
+
+    const payload = {
+      content: "🌸 **ออเดอร์ใหม่จากเว็บไซต์!**",
+      embeds: [{
+        title: "รายละเอียดการจ้างงาน",
+        color: 15277667,
+        fields: [
+          { name: "👤 ชื่อลูกค้า", value: name, inline: true },
+          { name: "📋 งานที่จ้าง", value: selectedJobName, inline: true },
+          { name: "💰 เรทราคา", value: selectedJobRate },
+          { name: "💳 วิธีการชำระ", value: pay === 'cash' ? "เงินสด (จ่ายภายใน 1-2 วัน)" : "เงินโอน (สแกนแล้ว)" }
+        ],
+        footer: { text: "เวลาสั่ง: " + new Date().toLocaleString('th-TH') }
+      }]
+    };
+
+    try {
+      const res = await fetch(webhookURL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if(res.ok) {
+        alert('ส่งข้อมูลสำเร็จ! เจ้าของร้านจะรีบทำให้ทันทีครับ');
+        closeModal();
+      } else {
+        alert('Webhook มีปัญหา กรุณาตรวจสอบการตั้งค่า');
+      }
+    } catch (e) {
+      alert('ไม่สามารถส่งข้อมูลได้ กรุณาเช็กอินเทอร์เน็ต');
+    }
+  }
+
+  function checkAdmin() {
+    const pw = prompt('ใส่รหัสผ่านเพื่อเข้าหน้าตั้งค่า:');
+    if(pw === '141053') {
+      document.getElementById('settings-modal').classList.add('active');
+      document.getElementById('webhook-input').value = webhookURL;
+    } else if(pw !== null) {
+      alert('รหัสผ่านไม่ถูกต้องนะครับ!');
+    }
+  }
+
+  function saveSettings() {
+    const val = document.getElementById('webhook-input').value.trim();
+    if(val) {
+      localStorage.setItem('webhookURL', val);
+      webhookURL = val;
+      alert('บันทึก Webhook ใหม่เรียบร้อย!');
+      closeSettings();
+    }
+  }
+  function closeSettings() { document.getElementById('settings-modal').classList.remove('active'); }
+
+  const reviews = [
+    { name: 'น้องมิน', stars: 5, text: 'ส่งงานไวมาก ทันเดดไลน์พอดีเลย!' },
+    { name: 'พี่โอ๊ต', stars: 5, text: 'สไลด์ Canva สวยมากครับ แนะนำเลย' }
+  ];
+  document.getElementById('reviews-container').innerHTML = reviews.map(r => `
+    <div class="review-card">
+      <div class="reviewer-name">${r.name}</div>
+      <div style="color:var(--gold)">${'★'.repeat(r.stars)}</div>
+      <div class="review-text">${r.text}</div>
+    </div>
+  `).join('');
+</script>
+</body>
+</html>
