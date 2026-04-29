@@ -1,245 +1,298 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ร้านกู้ชีพงานค้าง</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&family=Kanit:wght@400;600;700;900&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --pink: #e91e8c;
-    --pink-light: #f472b6;
-    --pink-pale: #fce7f3;
-    --pink-bg: #fff0f7;
-    --pink-dark: #be185d;
-    --green: #16a34a;
-    --green-bright: #22c55e;
-    --white: #ffffff;
-    --gray: #374151;
-    --border: #f9a8d4;
-    --text: #111827;
-    --text-muted: #4b5563;
-    --gold: #d97706;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Sarabun', sans-serif; background: var(--pink-bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { toast } from "sonner";
+import { Zap, Sparkles, Instagram, Facebook, Settings, Check, AlertTriangle, Upload } from "lucide-react";
+import Reviews from "@/components/Reviews";
+import { supabase } from "@/integrations/supabase/client";
 
-  header {
-    position: relative; text-align: center; padding: 60px 20px 50px;
-    background: linear-gradient(135deg, #fff0f7 0%, #fce7f3 50%, #fdf2f8 100%);
-    border-bottom: 4px solid var(--pink-light);
-  }
-  .badge {
-    display: inline-block; background: var(--pink-dark); color: #fff;
-    font-family: 'Kanit', sans-serif; font-size: 11px; font-weight: 700;
-    padding: 5px 18px; border-radius: 20px; margin-bottom: 18px;
-  }
-  h1 { font-family: 'Kanit', sans-serif; font-size: clamp(2.2rem, 6vw, 4rem); font-weight: 900; color: var(--text); }
-  h1 span { color: var(--pink); }
+const DEFAULT_JOBS: Record<string, string> = {
+  "งานแก้ข้อสอบ": "รับแก้ข้อสอบทุกรายวิชา ส่งไฟล์มาให้เราดูได้เลย",
+  "งานแก้ 0, ร, มส": "ช่วยจัดการเคลียร์เกรด 0, ร, มส ให้ผ่านครบทุกวิชา",
+  "งานค้าง": "งานเก่าที่ค้างไว้ เราช่วยปั่นให้ทันส่ง",
+  "ใบงานใน Canva": "ออกแบบใบงานสวยๆ ใน Canva ตามธีมที่ต้องการ",
+  "สไลด์พรีเซนใน Canva": "ทำสไลด์พรีเซนต์เทชันสวยพร้อมใช้งาน",
+};
 
-  .section { padding: 40px 20px; max-width: 1000px; margin: 0 auto; }
-  .section-title { font-family: 'Kanit', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--pink-dark); text-align: center; }
+const Index = () => {
+  const [open, setOpen] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [job, setJob] = useState("");
+  const [payment, setPayment] = useState<"" | "cash" | "transfer">("");
+  const [submitting, setSubmitting] = useState(false);
+  const [openText, setOpenText] = useState("เปิดให้บริการ 9:00 - 16:30");
+  const [jobDescs, setJobDescs] = useState<Record<string, string>>(DEFAULT_JOBS);
+  const [cashAck, setCashAck] = useState(false);
+  const [showCashWarn, setShowCashWarn] = useState(false);
+  const [slipBase64, setSlipBase64] = useState<string>("");
+  const [slipMime, setSlipMime] = useState<string>("");
+  const [slipPreview, setSlipPreview] = useState<string>("");
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
 
-  .reviews-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 30px; }
-  .review-card { background: var(--white); border: 2px solid var(--border); border-radius: 16px; padding: 24px; position: relative; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-  .reviewer-name { font-weight: 800; color: var(--text); }
-  .review-text { color: var(--gray); font-weight: 500; }
-
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
-  .modal-overlay.active { display: flex; }
-  .modal { background: var(--white); border-radius: 20px; padding: 30px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; }
-
-  .form-label { display: block; font-weight: 700; color: var(--pink-dark); margin: 15px 0 5px; }
-  .form-input, select { width: 100%; border: 2px solid var(--border); border-radius: 10px; padding: 12px; font-size: 1rem; outline: none; font-family: 'Sarabun'; }
-
-  .job-list { display: flex; flex-direction: column; gap: 10px; }
-  .job-option { border: 2px solid var(--border); border-radius: 12px; padding: 15px; cursor: pointer; background: white; transition: 0.2s; }
-  .job-option:hover { border-color: var(--pink); background: var(--pink-bg); }
-  .job-option.selected { border-color: var(--pink-dark); background: var(--pink-pale); border-width: 3px; }
-  .price-tag { display: block; font-size: 0.85rem; color: var(--pink-dark); font-weight: 600; margin-top: 5px; }
-
-  .payment-qr { display: none; text-align: center; margin-top: 15px; padding: 15px; border: 2px dashed var(--pink); border-radius: 10px; }
-  .payment-qr img { width: 100%; max-width: 250px; border-radius: 10px; }
-
-  .submit-btn { width: 100%; background: var(--green); color: #fff; border: none; border-radius: 50px; padding: 15px; font-weight: 700; font-family: 'Kanit'; cursor: pointer; margin-top: 20px; font-size: 1.1rem; transition: 0.2s; }
-  .submit-btn:hover { transform: scale(1.02); opacity: 0.9; }
-  
-  footer { text-align: center; padding: 40px 20px; border-top: 1px solid var(--border); color: var(--text-muted); background: white; }
-  #admin-trigger { cursor: pointer; opacity: 0.8; font-weight: 600; }
-</style>
-</head>
-<body>
-
-<header>
-  <div class="badge">🌸 บริการด่วน · รับงานทุกชิ้น</div>
-  <h1>ร้าน<span>กู้ชีพ</span>งานค้าง</h1>
-  <p style="font-weight: 700; color: var(--gray);">ส่งงานช้า? ค้างมานาน? เราช่วยได้ · รวดเร็ว · มืออาชีพ</p>
-  <button class="submit-btn" style="max-width: 250px;" onclick="openModal()">🚀 เริ่มจ้างงาน</button>
-</header>
-
-<div class="section">
-  <div class="section-title">💬 รีวิวจากลูกค้า</div>
-  <div class="reviews-grid" id="reviews-container"></div>
-  <button class="submit-btn" style="background: var(--pink); max-width: 200px; display:block; margin: 20px auto;" onclick="alert('ระบบเขียนรีวิวกำลังพัฒนาครับ')">✏️ เขียนรีวิว</button>
-</div>
-
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <span style="position:absolute; right:20px; top:15px; cursor:pointer; font-size:1.5rem;" onclick="closeModal()">✕</span>
-    <h2 style="font-family:'Kanit'; margin-bottom:10px;">📋 จ้างงาน</h2>
-    
-    <label class="form-label">ชื่อ-นามสกุล</label>
-    <input class="form-input" id="custName" type="text" placeholder="ชื่อของคุณ">
-    
-    <label class="form-label">เลือกประเภทงาน</label>
-    <div class="job-list">
-      <div class="job-option" onclick="selectJob(this,'งานแก้ข้อสอบ','จดน้อย 7บ. / เยอะ 12บ. / วาดรูป +4บ.')">
-        <strong>📝 งานแก้ข้อสอบ</strong>
-        <span class="price-tag">เรท: น้อย 7.- / เยอะ 12.- / วาดรูป +4.-</span>
-      </div>
-      <div class="job-option" onclick="selectJob(this,'งานแก้ 0 ร มส','จดน้อย 9บ. / เยอะ 14บ. / วาดรูป +6บ.')">
-        <strong>🔴 แก้ 0 ร มส</strong>
-        <span class="price-tag">เรท: น้อย 9.- / เยอะ 14.- / วาดรูป +6.-</span>
-      </div>
-      <div class="job-option" onclick="selectJob(this,'งานค้าง','จดน้อย 7บ. / เยอะ 12บ. / วาดรูป +4บ.')">
-        <strong>⏰ งานค้างทั่วไป</strong>
-        <span class="price-tag">เรท: น้อย 7.- / เยอะ 12.- / วาดรูป +4.-</span>
-      </div>
-      <div class="job-option" onclick="selectJob(this,'ใบงาน Canva','น้อย 9บ. / เยอะ 14บ.')">
-        <strong>🎨 ใบงาน Canva</strong>
-        <span class="price-tag">เรท: น้อย 9.- / เยอะ 14.-</span>
-      </div>
-      <div class="job-option" onclick="selectJob(this,'สไลด์ Canva','หน้าละ 9-14บ.')">
-        <strong>🖥️ สไลด์ Canva</strong>
-        <span class="price-tag">เรท: หน้าละ 9.- ถึง 14.-</span>
-      </div>
-    </div>
-
-    <label class="form-label">ช่องทางการชำระเงิน</label>
-    <select id="payMethod" onchange="togglePay()">
-      <option value="cash">เงินสด (จ่ายหน้างาน)</option>
-      <option value="transfer">เงินโอน (สแกน QR)</option>
-    </select>
-
-    <div id="qr-area" class="payment-qr">
-      <p style="font-weight:700; color:var(--pink-dark); margin-bottom:10px;">สแกนเพื่อโอนเงิน</p>
-      <img src="https://raw.githubusercontent.com/jame141053-lgtm/N/main/89dadac2-5876-4690-aeb0-11b4a5d99066.jpeg" alt="QR Code">
-    </div>
-
-    <p id="cash-note" style="margin-top:10px; font-size:0.85rem; color:red; font-weight:700;">
-      * โปรดนำเงินมาจ่ายให้ผมภายใน 1-2 วันหลังจากสั่งงานนะครับ
-    </p>
-
-    <button class="submit-btn" onclick="submitJob()">✅ ยืนยันการสั่งงาน</button>
-  </div>
-</div>
-
-<div class="modal-overlay" id="settings-modal">
-  <div class="modal">
-    <h2 style="font-family:'Kanit'">⚙️ ตั้งค่าระบบ</h2>
-    <label class="form-label">Discord Webhook URL</label>
-    <input class="form-input" id="webhook-input" type="text">
-    <button class="submit-btn" onclick="saveSettings()">บันทึก</button>
-    <button class="submit-btn" style="background:#gray; margin-top:10px;" onclick="closeSettings()">ปิด</button>
-  </div>
-</div>
-
-<footer>
-  <p>© 2024 <span id="admin-trigger" onclick="checkAdmin()">ร้านกู้ชีพงานค้าง</span> · ทำด้วยใจ ส่งทันเวลา 🌸</p>
-</footer>
-
-<script>
-  let selectedJobName = '';
-  let selectedJobRate = '';
-  const defaultWebhook = 'https://discord.com/api/webhooks/1498656699513438259/E-8yKZDNxMnxTErrfIS0DLUuC6SGSkSUfyyKxgnlpGLZtFWsFp29VEMaxFmn26zvUc3l';
-  let webhookURL = localStorage.getItem('webhookURL') || defaultWebhook;
-
-  function openModal() { document.getElementById('modal').classList.add('active'); }
-  function closeModal() { document.getElementById('modal').classList.remove('active'); }
-
-  function selectJob(el, name, rate) {
-    document.querySelectorAll('.job-option').forEach(o => o.classList.remove('selected'));
-    el.classList.add('selected');
-    selectedJobName = name;
-    selectedJobRate = rate;
-  }
-
-  function togglePay() {
-    const method = document.getElementById('payMethod').value;
-    document.getElementById('qr-area').style.display = (method === 'transfer') ? 'block' : 'none';
-    document.getElementById('cash-note').style.display = (method === 'cash') ? 'block' : 'none';
-  }
-
-  async function submitJob() {
-    const name = document.getElementById('custName').value.trim();
-    const pay = document.getElementById('payMethod').value;
-    
-    if(!name || !selectedJobName) { alert('กรุณากรอกชื่อและเลือกประเภทงานครับ'); return; }
-
-    const payload = {
-      content: "🌸 **ออเดอร์ใหม่จากเว็บไซต์!**",
-      embeds: [{
-        title: "รายละเอียดการจ้างงาน",
-        color: 15277667,
-        fields: [
-          { name: "👤 ชื่อลูกค้า", value: name, inline: true },
-          { name: "📋 งานที่จ้าง", value: selectedJobName, inline: true },
-          { name: "💰 เรทราคา", value: selectedJobRate },
-          { name: "💳 วิธีการชำระ", value: pay === 'cash' ? "เงินสด (จ่ายภายใน 1-2 วัน)" : "เงินโอน (สแกนแล้ว)" }
-        ],
-        footer: { text: "เวลาสั่ง: " + new Date().toLocaleString('th-TH') }
-      }]
-    };
-
-    try {
-      const res = await fetch(webhookURL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if(res.ok) {
-        alert('ส่งข้อมูลสำเร็จ! เจ้าของร้านจะรีบทำให้ทันทีครับ');
-        closeModal();
-      } else {
-        alert('Webhook มีปัญหา กรุณาตรวจสอบการตั้งค่า');
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("shop_open_text, job_descriptions, qr_code_data_url")
+        .eq("id", 1)
+        .maybeSingle();
+      if (data?.shop_open_text) setOpenText(data.shop_open_text);
+      if (data?.job_descriptions && typeof data.job_descriptions === "object") {
+        setJobDescs(data.job_descriptions as Record<string, string>);
       }
-    } catch (e) {
-      alert('ไม่สามารถส่งข้อมูลได้ กรุณาเช็กอินเทอร์เน็ต');
-    }
-  }
+      if (data?.qr_code_data_url) setQrDataUrl(data.qr_code_data_url);
+    })();
+  }, []);
 
-  function checkAdmin() {
-    const pw = prompt('ใส่รหัสผ่านเพื่อเข้าหน้าตั้งค่า:');
-    if(pw === '141053') {
-      document.getElementById('settings-modal').classList.add('active');
-      document.getElementById('webhook-input').value = webhookURL;
-    } else if(pw !== null) {
-      alert('รหัสผ่านไม่ถูกต้องนะครับ!');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!firstName.trim() || !lastName.trim() || !job) {
+      toast.error("กรุณากรอกข้อมูลให้ครบถ้วน");
+      return;
     }
-  }
-
-  function saveSettings() {
-    const val = document.getElementById('webhook-input').value.trim();
-    if(val) {
-      localStorage.setItem('webhookURL', val);
-      webhookURL = val;
-      alert('บันทึก Webhook ใหม่เรียบร้อย!');
-      closeSettings();
+    if (!payment) {
+      toast.error("กรุณาเลือกวิธีชำระเงิน");
+      return;
     }
-  }
-  function closeSettings() { document.getElementById('settings-modal').classList.remove('active'); }
+    if (payment === "cash" && !cashAck) {
+      toast.error("กรุณากดรับทราบเงื่อนไขการชำระเงินสด");
+      return;
+    }
+    if (payment === "transfer" && !slipBase64) {
+      toast.error("กรุณาแนบรูปสลิปการโอนก่อน");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await supabase.functions.invoke("notify-webhook", {
+        body: {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          job,
+          payment,
+          ...(payment === "transfer" ? { slipBase64, slipMime } : {}),
+        },
+      });
+      toast.success(`รับงานเรียบร้อย! ${firstName} ${lastName} • ${job}`);
+      setOpen(false);
+      setFirstName(""); setLastName(""); setJob(""); setPayment("");
+      setCashAck(false); setSlipBase64(""); setSlipMime(""); setSlipPreview("");
+    } catch (err) {
+      toast.error("เกิดข้อผิดพลาด ลองอีกครั้ง");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-  const reviews = [
-    { name: 'น้องมิน', stars: 5, text: 'ส่งงานไวมาก ทันเดดไลน์พอดีเลย!' },
-    { name: 'พี่โอ๊ต', stars: 5, text: 'สไลด์ Canva สวยมากครับ แนะนำเลย' }
-  ];
-  document.getElementById('reviews-container').innerHTML = reviews.map(r => `
-    <div class="review-card">
-      <div class="reviewer-name">${r.name}</div>
-      <div style="color:var(--gold)">${'★'.repeat(r.stars)}</div>
-      <div class="review-text">${r.text}</div>
-    </div>
-  `).join('');
-</script>
-</body>
-</html>
+  const handlePaymentChange = (v: "cash" | "transfer") => {
+    setPayment(v);
+    if (v === "cash" && !cashAck) setShowCashWarn(true);
+  };
+
+  const handleSlipUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("ไฟล์ใหญ่เกิน 5MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      setSlipPreview(result);
+      setSlipBase64(result.split(",")[1] || "");
+      setSlipMime(file.type);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const jobNames = Object.keys(jobDescs);
+
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-16 relative">
+      <Link
+        to="/auth"
+        title="แอดมิน"
+        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 transition"
+      >
+        <Settings className="w-4 h-4" />
+      </Link>
+      <div className="max-w-3xl w-full text-center space-y-10">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/40 bg-primary/10 text-sm text-primary">
+          <Sparkles className="w-4 h-4" />
+          {openText}
+        </div>
+
+        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-primary">
+          ร้านกู้ชีพ<span className="text-foreground">งานค้าง</span>
+        </h1>
+
+        <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto">
+          ส่งงานไม่ทัน? เกรดใกล้หลุด? เราพร้อมช่วยกู้ชีพให้รอดทุกวิชา ⚡
+        </p>
+
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <button className="neon-btn animate-pulse-glow inline-flex items-center gap-3 px-10 py-5 rounded-full text-lg font-bold uppercase tracking-wider">
+              <Zap className="w-6 h-6" />
+              เริ่มจ้างงาน
+            </button>
+          </DialogTrigger>
+
+          <DialogContent className="sm:max-w-md border-[hsl(var(--neon)/0.3)] bg-card/95 backdrop-blur max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl text-primary">📋 ฟอร์มจ้างงาน</DialogTitle>
+            </DialogHeader>
+
+            <form onSubmit={handleSubmit} className="space-y-5 pt-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="fname">ชื่อ</Label>
+                  <Input id="fname" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="ชื่อจริง" maxLength={50} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lname">นามสกุล</Label>
+                  <Input id="lname" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="นามสกุล" maxLength={50} />
+                </div>
+              </div>
+
+              <div className="space-y-2 text-left">
+                <Label>เลือกงาน (เลือกได้ 1 อย่าง)</Label>
+                <RadioGroup value={job} onValueChange={setJob} className="space-y-2">
+                  {jobNames.map((name) => {
+                    const selected = job === name;
+                    return (
+                      <label
+                        key={name}
+                        htmlFor={`job-${name}`}
+                        className={`block p-3 rounded-lg border cursor-pointer transition ${
+                          selected ? "border-[hsl(var(--neon))] bg-[hsl(var(--neon)/0.1)]" : "border-border hover:border-primary/40"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <RadioGroupItem value={name} id={`job-${name}`} />
+                          <span className="font-semibold flex-1">{name}</span>
+                          {selected && <Check className="w-4 h-4 text-primary" />}
+                        </div>
+                        {selected && jobDescs[name] && (
+                          <p className="text-xs text-muted-foreground mt-2 pl-7 whitespace-pre-line">
+                            {jobDescs[name]}
+                          </p>
+                        )}
+                      </label>
+                    );
+                  })}
+                </RadioGroup>
+              </div>
+
+              <div className="space-y-3 text-left">
+                <Label>วิธีชำระเงิน</Label>
+                <RadioGroup value={payment} onValueChange={(v) => handlePaymentChange(v as "cash" | "transfer")} className="grid grid-cols-2 gap-3">
+                  <label htmlFor="cash" className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition ${payment === "cash" ? "border-[hsl(var(--neon))] bg-[hsl(var(--neon)/0.1)]" : "border-border"}`}>
+                    <RadioGroupItem value="cash" id="cash" />
+                    <span>💵 เงินสด</span>
+                  </label>
+                  <label htmlFor="transfer" className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition ${payment === "transfer" ? "border-[hsl(var(--neon))] bg-[hsl(var(--neon)/0.1)]" : "border-border"}`}>
+                    <RadioGroupItem value="transfer" id="transfer" />
+                    <span>🏦 โอนจ่าย</span>
+                  </label>
+                </RadioGroup>
+
+                {payment === "cash" && cashAck && (
+                  <div className="text-xs text-yellow-500 flex items-center gap-1">
+                    <Check className="w-3 h-3" /> รับทราบเงื่อนไขชำระเงินสดแล้ว
+                  </div>
+                )}
+
+                {payment === "transfer" && (
+                  <div className="space-y-2 p-3 rounded-lg border border-yellow-500/40 bg-yellow-500/10">
+                    <p className="text-xs text-yellow-200 flex items-start gap-1">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>โปรดโอนเงินก่อน แล้วแนบรูปสลิปด้านล่าง จึงจะกดยืนยันได้</span>
+                    </p>
+                    {qrDataUrl ? (
+                      <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-white">
+                        <img src={qrDataUrl} alt="QR Code ชำระเงิน" className="w-48 h-48 object-contain" />
+                        <p className="text-xs text-black/70">สแกน QR เพื่อโอนเงิน</p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-yellow-200/80 italic">— ยังไม่ได้ตั้งค่า QR Code —</p>
+                    )}
+                    <label className="flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed border-yellow-500/50 cursor-pointer hover:bg-yellow-500/10 transition">
+                      <Upload className="w-4 h-4" />
+                      <span className="text-sm">{slipPreview ? "เปลี่ยนรูปสลิป" : "แนบรูปสลิป (สูงสุด 5MB)"}</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleSlipUpload} />
+                    </label>
+                    {slipPreview && (
+                      <img src={slipPreview} alt="สลิปการโอน" className="w-full max-h-48 object-contain rounded border border-border" />
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <AlertDialog open={showCashWarn} onOpenChange={setShowCashWarn}>
+                <AlertDialogContent className="border-yellow-500/50 bg-yellow-500/10 backdrop-blur">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-yellow-300 flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5" /> ⚠️ เตือน
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-yellow-100">
+                      โปรดนำเงินมาชำระให้เราภายใน 1-2 วัน หลังจากจ้างงาน
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogAction
+                      className="bg-yellow-500 text-black hover:bg-yellow-400"
+                      onClick={() => { setCashAck(true); setShowCashWarn(false); }}
+                    >
+                      รับทราบ
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              <DialogFooter>
+                <button type="submit" disabled={submitting} className="neon-btn w-full py-3 rounded-lg font-bold uppercase tracking-wider disabled:opacity-60">
+                  {submitting ? "กำลังส่ง..." : "ยืนยันการจ้างงาน"}
+                </button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <Reviews />
+
+        <div className="pt-8 space-y-3">
+          <p className="text-sm text-muted-foreground">ติดต่อด่วน</p>
+          <div className="flex items-center justify-center gap-3">
+            <a
+              href="https://instagram.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-primary-foreground bg-gradient-to-r from-[hsl(335_80%_60%)] to-[hsl(20_90%_60%)] shadow-lg shadow-primary/30 hover:scale-105 transition"
+            >
+              <Instagram className="w-5 h-5" />
+              Instagram
+            </a>
+            <a
+              href="https://facebook.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-white bg-[hsl(220_85%_55%)] shadow-lg shadow-[hsl(220_85%_55%/0.4)] hover:scale-105 transition"
+            >
+              <Facebook className="w-5 h-5" />
+              Facebook
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+};
+
+export default Index;
