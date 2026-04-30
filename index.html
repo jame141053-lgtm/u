@@ -1,298 +1,848 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { toast } from "sonner";
-import { Zap, Sparkles, Instagram, Facebook, Settings, Check, AlertTriangle, Upload } from "lucide-react";
-import Reviews from "@/components/Reviews";
-import { supabase } from "@/integrations/supabase/client";
+<!DOCTYPE html>
 
-const DEFAULT_JOBS: Record<string, string> = {
-  "งานแก้ข้อสอบ": "รับแก้ข้อสอบทุกรายวิชา ส่งไฟล์มาให้เราดูได้เลย",
-  "งานแก้ 0, ร, มส": "ช่วยจัดการเคลียร์เกรด 0, ร, มส ให้ผ่านครบทุกวิชา",
-  "งานค้าง": "งานเก่าที่ค้างไว้ เราช่วยปั่นให้ทันส่ง",
-  "ใบงานใน Canva": "ออกแบบใบงานสวยๆ ใน Canva ตามธีมที่ต้องการ",
-  "สไลด์พรีเซนใน Canva": "ทำสไลด์พรีเซนต์เทชันสวยพร้อมใช้งาน",
-};
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ร้านกู้ชีพงานค้าง</title>
+<link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600;700&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --rose: #f43f8e;
+  --rose-dark: #c4196a;
+  --rose-deep: #8b0a46;
+  --rose-light: #fb7bb8;
+  --rose-pale: #fce7f3;
+  --rose-bg: #fff5f9;
+  --mint: #10b981;
+  --mint-light: #34d399;
+  --amber: #f59e0b;
+  --amber-dark: #d97706;
+  --sky: #0ea5e9;
+  --sky-dark: #0284c7;
+  --white: #ffffff;
+  --ink: #1a0a12;
+  --ink-soft: #4a1a30;
+  --muted: #9d7a8a;
+  --border: #f0d0e0;
+  --card-bg: #fffafd;
+  --shadow-rose: 0 8px 32px rgba(244,63,142,0.18);
+  --shadow-soft: 0 4px 24px rgba(26,10,18,0.08);
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { font-family:'Sarabun',sans-serif; background:var(--rose-bg); color:var(--ink); min-height:100vh; overflow-x:hidden; }
 
-const Index = () => {
-  const [open, setOpen] = useState(false);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [job, setJob] = useState("");
-  const [payment, setPayment] = useState<"" | "cash" | "transfer">("");
-  const [submitting, setSubmitting] = useState(false);
-  const [openText, setOpenText] = useState("เปิดให้บริการ 9:00 - 16:30");
-  const [jobDescs, setJobDescs] = useState<Record<string, string>>(DEFAULT_JOBS);
-  const [cashAck, setCashAck] = useState(false);
-  const [showCashWarn, setShowCashWarn] = useState(false);
-  const [slipBase64, setSlipBase64] = useState<string>("");
-  const [slipMime, setSlipMime] = useState<string>("");
-  const [slipPreview, setSlipPreview] = useState<string>("");
-  const [qrDataUrl, setQrDataUrl] = useState<string>("");
+.settings-top-btn { position:absolute; top:24px; right:24px; background:rgba(255,255,255,0.9); backdrop-filter:blur(12px); border:1.5px solid var(–border); border-radius:14px; padding:10px 18px; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem; font-family:‘Mitr’,sans-serif; font-weight:500; color:var(–rose-dark); z-index:100; box-shadow:var(–shadow-soft); transition:all 0.2s; }
+.settings-top-btn:hover { background:var(–rose-pale); border-color:var(–rose-light); transform:translateY(-2px); box-shadow:var(–shadow-rose); }
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from("site_settings")
-        .select("shop_open_text, job_descriptions, qr_code_data_url")
-        .eq("id", 1)
-        .maybeSingle();
-      if (data?.shop_open_text) setOpenText(data.shop_open_text);
-      if (data?.job_descriptions && typeof data.job_descriptions === "object") {
-        setJobDescs(data.job_descriptions as Record<string, string>);
-      }
-      if (data?.qr_code_data_url) setQrDataUrl(data.qr_code_data_url);
-    })();
-  }, []);
+header { position:relative; padding:80px 24px 70px; text-align:center; background:linear-gradient(160deg,#fff0f7 0%,#fce4f0 40%,#fdf2f8 100%); border-bottom:1px solid var(–border); overflow:hidden; }
+header::before { content:’’; position:absolute; top:-120px; left:50%; transform:translateX(-50%); width:800px; height:500px; background:radial-gradient(ellipse,rgba(244,63,142,0.12) 0%,transparent 65%); pointer-events:none; }
+.badge { display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg,var(–rose),var(–rose-dark)); color:#fff; font-family:‘Mitr’,sans-serif; font-size:0.75rem; font-weight:500; letter-spacing:2px; text-transform:uppercase; padding:6px 20px; border-radius:100px; margin-bottom:24px; box-shadow:0 4px 16px rgba(244,63,142,0.35); animation:fadeUp 0.7s ease both; }
+.hero-title { font-family:‘Mitr’,sans-serif; font-size:clamp(2.8rem,8vw,5.5rem); font-weight:700; line-height:1.05; color:var(–ink); animation:fadeUp 0.8s ease 0.1s both; letter-spacing:-1px; }
+.hero-title .accent { background:linear-gradient(135deg,var(–rose),var(–rose-dark)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.tagline { margin-top:16px; font-size:1.1rem; color:var(–muted); animation:fadeUp 0.8s ease 0.2s both; }
+.cta-btn { margin-top:36px; display:inline-flex; align-items:center; gap:10px; background:linear-gradient(135deg,var(–mint-light),var(–mint)); color:#fff; font-family:‘Mitr’,sans-serif; font-size:1.1rem; font-weight:600; padding:16px 44px; border:none; border-radius:100px; cursor:pointer; box-shadow:0 8px 28px rgba(16,185,129,0.35); transition:all 0.2s; animation:fadeUp 0.8s ease 0.3s both; position:relative; overflow:hidden; }
+.cta-btn:hover { transform:translateY(-3px); box-shadow:0 12px 36px rgba(16,185,129,0.45); }
+@keyframes fadeUp { from{opacity:0;transform:translateY(24px);} to{opacity:1;transform:translateY(0);} }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!firstName.trim() || !lastName.trim() || !job) {
-      toast.error("กรุณากรอกข้อมูลให้ครบถ้วน");
-      return;
-    }
-    if (!payment) {
-      toast.error("กรุณาเลือกวิธีชำระเงิน");
-      return;
-    }
-    if (payment === "cash" && !cashAck) {
-      toast.error("กรุณากดรับทราบเงื่อนไขการชำระเงินสด");
-      return;
-    }
-    if (payment === "transfer" && !slipBase64) {
-      toast.error("กรุณาแนบรูปสลิปการโอนก่อน");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await supabase.functions.invoke("notify-webhook", {
-        body: {
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          job,
-          payment,
-          ...(payment === "transfer" ? { slipBase64, slipMime } : {}),
-        },
-      });
-      toast.success(`รับงานเรียบร้อย! ${firstName} ${lastName} • ${job}`);
-      setOpen(false);
-      setFirstName(""); setLastName(""); setJob(""); setPayment("");
-      setCashAck(false); setSlipBase64(""); setSlipMime(""); setSlipPreview("");
-    } catch (err) {
-      toast.error("เกิดข้อผิดพลาด ลองอีกครั้ง");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+.counter-bar { position:relative; background:linear-gradient(135deg,var(–rose-deep),var(–rose-dark),var(–rose)); padding:28px 20px; text-align:center; overflow:hidden; }
+.counter-inner { position:relative; display:inline-flex; align-items:center; gap:16px; background:rgba(255,255,255,0.12); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.2); border-radius:100px; padding:14px 36px; }
+.counter-num { font-family:‘Mitr’,sans-serif; font-size:2.4rem; font-weight:700; color:#fff; }
+.counter-label { font-family:‘Mitr’,sans-serif; font-size:1rem; color:rgba(255,255,255,0.9); }
 
-  const handlePaymentChange = (v: "cash" | "transfer") => {
-    setPayment(v);
-    if (v === "cash" && !cashAck) setShowCashWarn(true);
-  };
+.section { padding:72px 24px; max-width:1100px; margin:0 auto; }
+.section-header { text-align:center; margin-bottom:48px; }
+.section-title { font-family:‘Mitr’,sans-serif; font-size:2rem; font-weight:700; color:var(–ink); margin-bottom:8px; letter-spacing:-0.5px; }
+.section-title span { color:var(–rose); }
+.section-sub { font-size:1rem; color:var(–muted); }
 
-  const handleSlipUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("ไฟล์ใหญ่เกิน 5MB");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      setSlipPreview(result);
-      setSlipBase64(result.split(",")[1] || "");
-      setSlipMime(file.type);
-    };
-    reader.readAsDataURL(file);
-  };
+.price-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:20px; }
+.price-card { background:var(–card-bg); border:1px solid var(–border); border-radius:24px; padding:28px 24px; transition:all 0.25s; position:relative; overflow:hidden; }
+.price-card::before { content:’’; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(–rose-light),var(–rose)); opacity:0; transition:opacity 0.2s; }
+.price-card:hover { transform:translateY(-6px); box-shadow:var(–shadow-rose); border-color:var(–rose-light); }
+.price-card:hover::before { opacity:1; }
+.price-card-header { display:flex; align-items:center; gap:14px; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(–border); }
+.price-card-icon { width:48px; height:48px; background:var(–rose-pale); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.6rem; }
+.price-card-title { font-family:‘Mitr’,sans-serif; font-size:1.05rem; font-weight:600; color:var(–ink); }
+.price-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px dashed rgba(240,208,224,0.6); font-size:0.9rem; }
+.price-row:last-of-type { border-bottom:none; }
+.price-row-label { color:var(–muted); }
+.price-row-val { font-family:‘Mitr’,sans-serif; font-weight:600; color:var(–rose-dark); font-size:1rem; }
+.promo-badge { display:inline-flex; align-items:center; gap:6px; margin-top:14px; background:linear-gradient(135deg,var(–amber),var(–amber-dark)); color:#fff; font-family:‘Mitr’,sans-serif; font-size:0.8rem; font-weight:500; padding:6px 14px; border-radius:100px; box-shadow:0 4px 12px rgba(245,158,11,0.3); }
 
-  const jobNames = Object.keys(jobDescs);
+.status-wrap { max-width:560px; margin:0 auto; }
+.status-search-box { display:flex; gap:10px; margin-bottom:28px; }
+.status-search-box input { flex:1; background:var(–white); border:1.5px solid var(–border); border-radius:16px; padding:14px 20px; font-family:‘Sarabun’,sans-serif; font-size:1rem; color:var(–ink); outline:none; transition:all 0.2s; box-shadow:var(–shadow-soft); }
+.status-search-box input:focus { border-color:var(–rose-light); box-shadow:0 0 0 3px rgba(244,63,142,0.1); }
+.status-search-btn { background:linear-gradient(135deg,var(–rose),var(–rose-dark)); color:#fff; border:none; border-radius:16px; padding:14px 24px; font-family:‘Mitr’,sans-serif; font-weight:600; font-size:0.95rem; cursor:pointer; white-space:nowrap; box-shadow:0 6px 20px rgba(244,63,142,0.35); transition:all 0.2s; }
+.status-search-btn:hover { transform:translateY(-2px); }
+.status-card { background:var(–card-bg); border:1px solid var(–border); border-radius:20px; padding:20px 24px; margin-bottom:12px; box-shadow:var(–shadow-soft); animation:fadeUp 0.3s ease; }
+.status-card-name { font-family:‘Mitr’,sans-serif; font-weight:600; font-size:1rem; margin-bottom:6px; }
+.status-card-job { font-size:0.88rem; color:var(–muted); margin-bottom:10px; }
+.status-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 16px; border-radius:100px; font-family:‘Mitr’,sans-serif; font-size:0.82rem; font-weight:500; }
+.status-pending { background:#fef3c7; color:#92400e; }
+.status-working { background:#dbeafe; color:#1e40af; }
+.status-done { background:#dcfce7; color:#166534; }
+.status-empty { text-align:center; color:var(–muted); padding:32px; font-size:0.95rem; }
 
-  return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-16 relative">
-      <Link
-        to="/auth"
-        title="แอดมิน"
-        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 transition"
-      >
-        <Settings className="w-4 h-4" />
-      </Link>
-      <div className="max-w-3xl w-full text-center space-y-10">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/40 bg-primary/10 text-sm text-primary">
-          <Sparkles className="w-4 h-4" />
-          {openText}
-        </div>
+.reviews-slider-wrap { overflow:hidden; mask-image:linear-gradient(to right,transparent,black 10%,black 90%,transparent); -webkit-mask-image:linear-gradient(to right,transparent,black 10%,black 90%,transparent); }
+.reviews-track { display:flex; gap:20px; animation:scrollLeft 35s linear infinite; width:max-content; }
+.reviews-track:hover { animation-play-state:paused; }
+@keyframes scrollLeft { 0%{transform:translateX(0);} 100%{transform:translateX(-50%);} }
+.review-card { background:var(–card-bg); border:1px solid var(–border); border-radius:20px; padding:24px 22px; min-width:290px; max-width:310px; flex-shrink:0; transition:all 0.2s; box-shadow:var(–shadow-soft); }
+.review-card:hover { transform:translateY(-4px); box-shadow:var(–shadow-rose); border-color:var(–rose-light); }
+.reviewer-info { display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+.reviewer-avatar { width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,var(–rose-pale),#fce7f3); border:2px solid var(–rose-light); display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
+.reviewer-name { font-family:‘Mitr’,sans-serif; font-weight:600; font-size:0.95rem; color:var(–ink); }
+.reviewer-role { font-size:0.8rem; color:var(–muted); margin-top:2px; }
+.stars { color:var(–amber); font-size:0.85rem; margin-bottom:8px; }
+.review-text { font-size:0.9rem; line-height:1.7; color:var(–ink-soft); }
 
-        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-primary">
-          ร้านกู้ชีพ<span className="text-foreground">งานค้าง</span>
-        </h1>
+.divider { height:1px; background:linear-gradient(to right,transparent,var(–border),transparent); margin:0 60px; }
 
-        <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto">
-          ส่งงานไม่ทัน? เกรดใกล้หลุด? เราพร้อมช่วยกู้ชีพให้รอดทุกวิชา ⚡
-        </p>
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(26,10,18,0.4); z-index:1000; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(8px); }
+.modal-overlay.active { display:flex; }
+.modal { background:var(–white); border:1px solid var(–border); border-radius:28px; padding:36px 32px; max-width:500px; width:100%; box-shadow:0 32px 80px rgba(244,63,142,0.15); animation:modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1); max-height:92vh; overflow-y:auto; }
+@keyframes modalIn { from{opacity:0;transform:translateY(30px) scale(0.96);} to{opacity:1;transform:translateY(0) scale(1);} }
+.modal-title { font-family:‘Mitr’,sans-serif; font-size:1.5rem; font-weight:700; color:var(–ink); margin-bottom:4px; }
+.modal-sub { font-size:0.88rem; color:var(–muted); margin-bottom:28px; }
+.close-btn { float:right; background:var(–rose-pale); border:none; color:var(–rose-dark); font-size:1rem; cursor:pointer; width:32px; height:32px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-top:-4px; transition:background 0.15s; }
+.close-btn:hover { background:#fad4e8; }
+.form-label { display:block; font-size:0.78rem; font-weight:600; color:var(–rose-dark); margin-bottom:8px; letter-spacing:0.5px; text-transform:uppercase; }
+.form-input { width:100%; background:var(–rose-bg); border:1.5px solid var(–border); border-radius:14px; padding:13px 16px; color:var(–ink); font-family:‘Sarabun’,sans-serif; font-size:1rem; margin-bottom:18px; outline:none; transition:all 0.2s; }
+.form-input:focus { border-color:var(–rose-light); box-shadow:0 0 0 3px rgba(244,63,142,0.08); }
+.form-input::placeholder { color:#d4a0bc; }
+.job-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+.job-option { border:1.5px solid var(–border); border-radius:16px; padding:16px 12px; cursor:pointer; text-align:center; font-size:0.88rem; line-height:1.4; background:var(–rose-bg); color:var(–muted); transition:all 0.15s; }
+.job-option:hover { border-color:var(–rose-light); background:var(–rose-pale); color:var(–rose-dark); }
+.job-option.selected { border-color:var(–rose); background:var(–rose-pale); color:var(–rose-dark); font-weight:600; box-shadow:0 0 0 3px rgba(244,63,142,0.1); }
+.job-icon { font-size:1.6rem; display:block; margin-bottom:6px; }
+.payment-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px; }
+.payment-option { border:1.5px solid var(–border); border-radius:18px; padding:20px 12px; cursor:pointer; text-align:center; background:var(–rose-bg); color:var(–muted); transition:all 0.15s; }
+.payment-option:hover { border-color:var(–rose-light); background:var(–rose-pale); transform:translateY(-2px); }
+.payment-option.selected { border-color:var(–rose); background:var(–rose-pale); color:var(–rose-dark); box-shadow:0 0 0 3px rgba(244,63,142,0.1); }
+.payment-option.selected-transfer { border-color:var(–sky); background:#e0f2fe; color:var(–sky-dark); box-shadow:0 0 0 3px rgba(14,165,233,0.1); }
+.payment-icon { font-size:2.2rem; display:block; margin-bottom:8px; }
+.payment-label { font-family:‘Mitr’,sans-serif; font-weight:600; font-size:0.95rem; }
+.payment-desc { font-size:0.76rem; color:var(–muted); margin-top:4px; }
+.cash-alert { background:linear-gradient(135deg,#fffbeb,#fef9c3); border:1.5px solid #fde68a; border-radius:18px; padding:20px 18px; margin-bottom:16px; animation:fadeUp 0.25s ease; }
+.cash-alert-icon { font-size:2rem; text-align:center; margin-bottom:8px; }
+.cash-alert-title { font-family:‘Mitr’,sans-serif; font-weight:700; font-size:1rem; color:#78350f; text-align:center; margin-bottom:8px; }
+.cash-alert-text { font-size:0.88rem; color:#92400e; line-height:1.65; margin-bottom:14px; }
+.cash-acknowledge { display:flex; align-items:center; gap:10px; cursor:pointer; background:#fff; border:1.5px solid #fde68a; border-radius:12px; padding:12px 14px; transition:background 0.15s; }
+.cash-acknowledge:hover { background:#fefce8; }
+.cash-acknowledge input[type=checkbox] { width:18px; height:18px; accent-color:var(–amber); cursor:pointer; flex-shrink:0; }
+.cash-acknowledge-text { font-size:0.86rem; font-weight:600; color:#92400e; }
+.transfer-box { background:#f0f9ff; border:1.5px solid #bae6fd; border-radius:18px; padding:22px 18px; margin-bottom:16px; text-align:center; animation:fadeUp 0.25s ease; }
+.qr-placeholder { width:180px; height:180px; margin:0 auto 16px; background:linear-gradient(135deg,#e0f2fe,#bae6fd); border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:0.85rem; color:#0369a1; font-weight:600; border:2px dashed #7dd3fc; overflow:hidden; }
+.qr-placeholder img { width:100%; height:100%; object-fit:contain; border-radius:14px; }
+.transfer-title { font-family:‘Mitr’,sans-serif; font-weight:700; color:var(–sky-dark); margin-bottom:4px; }
+.transfer-note { font-size:0.82rem; color:var(–sky); margin-bottom:14px; }
+.slip-upload-area { border:2px dashed #7dd3fc; border-radius:14px; padding:22px; text-align:center; cursor:pointer; background:#fff; transition:all 0.2s; position:relative; }
+.slip-upload-area:hover { border-color:var(–sky); background:#f0f9ff; }
+.slip-upload-area.has-file { border-color:var(–mint); background:#f0fdf4; border-style:solid; }
+.slip-upload-area input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.slip-upload-icon { font-size:2rem; margin-bottom:8px; }
+.slip-upload-text { font-size:0.88rem; color:var(–sky); font-weight:600; }
+.slip-upload-sub { font-size:0.76rem; color:var(–muted); margin-top:4px; }
+.slip-preview { max-width:100%; max-height:120px; border-radius:10px; margin-top:10px; object-fit:contain; }
+.submit-btn { width:100%; background:linear-gradient(135deg,var(–mint-light),var(–mint)); color:#fff; border:none; border-radius:100px; padding:16px; font-family:‘Mitr’,sans-serif; font-size:1.05rem; font-weight:600; cursor:pointer; transition:all 0.2s; box-shadow:0 6px 20px rgba(16,185,129,0.3); margin-top:8px; }
+.submit-btn:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(16,185,129,0.4); }
+.submit-btn:disabled { background:#e5e7eb; color:#9ca3af; cursor:not-allowed; transform:none; box-shadow:none; }
+.btn-rose { background:linear-gradient(135deg,var(–rose-light),var(–rose)) !important; box-shadow:0 6px 20px rgba(244,63,142,0.3) !important; }
+.btn-rose:hover { box-shadow:0 10px 28px rgba(244,63,142,0.4) !important; }
+.btn-red { background:linear-gradient(135deg,#f87171,#ef4444) !important; box-shadow:0 6px 20px rgba(239,68,68,0.3) !important; }
+.btn-gray { background:linear-gradient(135deg,#9ca3af,#6b7280) !important; box-shadow:0 4px 16px rgba(107,114,128,0.2) !important; }
+.success-box { text-align:center; padding:16px 0; }
+.success-icon { font-size:4.5rem; margin-bottom:16px; }
+.success-title { font-family:‘Mitr’,sans-serif; font-size:1.5rem; font-weight:700; margin-bottom:8px; color:var(–mint); }
+.success-text { color:var(–muted); font-size:0.92rem; line-height:1.7; white-space:pre-line; }
+.settings-section { background:var(–rose-bg); border:1px solid var(–border); border-radius:20px; padding:22px; margin-bottom:18px; }
+.settings-section-title { font-family:‘Mitr’,sans-serif; font-size:0.95rem; font-weight:600; color:var(–rose-dark); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+.tg-box { background:#e8f7ff; border:1px solid #b3e0f7; border-radius:14px; padding:16px; margin-bottom:16px; }
+.tg-row { display:flex; gap:8px; margin-top:8px; }
+.tg-row input { flex:1; background:#fff; border:1px solid #b3e0f7; border-radius:10px; padding:10px 12px; color:var(–ink); font-size:0.82rem; font-family:monospace; outline:none; }
+.tg-row input:focus { border-color:var(–sky); }
+.tg-save-btn { background:var(–sky); color:#fff; border:none; border-radius:10px; padding:10px 16px; font-family:‘Sarabun’,sans-serif; font-size:0.88rem; cursor:pointer; white-space:nowrap; transition:background 0.15s; }
+.tg-save-btn:hover { background:var(–sky-dark); }
+.edit-field { margin-bottom:14px; }
+.edit-field label { display:block; font-size:0.78rem; font-weight:600; color:var(–rose-dark); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
+.edit-field input { width:100%; background:#fff; border:1.5px solid var(–border); border-radius:12px; padding:10px 14px; color:var(–ink); font-family:‘Sarabun’,sans-serif; font-size:0.9rem; outline:none; transition:border-color 0.2s; }
+.edit-field input:focus { border-color:var(–rose-light); }
+.status-admin-row { display:flex; align-items:center; gap:10px; padding:12px; background:#fff; border:1px solid var(–border); border-radius:14px; margin-bottom:8px; flex-wrap:wrap; }
+.status-admin-name { font-weight:600; font-size:0.88rem; flex:1; min-width:100px; color:var(–ink); }
+.status-select { border:1.5px solid var(–border); border-radius:10px; padding:7px 10px; font-family:‘Sarabun’,sans-serif; font-size:0.82rem; background:#fff; color:var(–ink); cursor:pointer; outline:none; }
+.status-select:focus { border-color:var(–rose-light); }
+.del-order-btn { background:linear-gradient(135deg,#f87171,#ef4444); color:#fff; border:none; border-radius:10px; padding:7px 12px; cursor:pointer; font-size:0.8rem; font-family:‘Sarabun’,sans-serif; }
+.lock-overlay { text-align:center; padding:8px 0 4px; }
+.lock-icon { font-size:2.8rem; margin-bottom:12px; }
+.error-msg { color:#ef4444; font-size:0.84rem; margin-top:-12px; margin-bottom:12px; }
+.spinner { display:inline-block; width:18px; height:18px; border:2px solid rgba(255,255,255,0.4); border-top-color:#fff; border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:8px; }
+@keyframes spin { to{transform:rotate(360deg);} }
+.contact-section { background:linear-gradient(160deg,var(–white) 0%,var(–rose-bg) 100%); padding:52px 24px; text-align:center; border-top:1px solid var(–border); }
+.contact-title { font-family:‘Mitr’,sans-serif; font-size:1.3rem; font-weight:700; color:var(–ink); margin-bottom:24px; }
+.social-links { display:flex; justify-content:center; gap:16px; flex-wrap:wrap; }
+.social-btn { display:flex; align-items:center; gap:10px; color:#fff; text-decoration:none; padding:13px 28px; border-radius:16px; font-family:‘Mitr’,sans-serif; font-size:0.95rem; font-weight:600; transition:all 0.2s; }
+.social-btn:hover { transform:translateY(-3px); }
+.social-btn-fb { background:#1877f2; box-shadow:0 6px 20px rgba(24,119,242,0.35); }
+.social-btn-ig { background:linear-gradient(135deg,#f58529,#dd2a7b,#8134af); box-shadow:0 6px 20px rgba(221,42,123,0.35); }
+footer { text-align:center; padding:32px 20px; border-top:1px solid var(–border); color:var(–muted); font-size:0.84rem; background:var(–white); }
+footer span { color:var(–rose); font-weight:600; }
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <button className="neon-btn animate-pulse-glow inline-flex items-center gap-3 px-10 py-5 rounded-full text-lg font-bold uppercase tracking-wider">
-              <Zap className="w-6 h-6" />
-              เริ่มจ้างงาน
-            </button>
-          </DialogTrigger>
+/* Counter info box in settings */
+.counter-info-box { background:linear-gradient(135deg,var(–rose-pale),#fce7f3); border:1.5px solid var(–rose-light); border-radius:16px; padding:18px 20px; text-align:center; }
+.counter-info-num { font-family:‘Mitr’,sans-serif; font-size:2.5rem; font-weight:700; color:var(–rose-dark); }
+.counter-info-label { font-size:0.85rem; color:var(–muted); margin-top:4px; }
+.counter-info-sub { font-size:0.78rem; color:var(–rose); margin-top:8px; font-weight:500; }
+</style>
 
-          <DialogContent className="sm:max-w-md border-[hsl(var(--neon)/0.3)] bg-card/95 backdrop-blur max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl text-primary">📋 ฟอร์มจ้างงาน</DialogTitle>
-            </DialogHeader>
+</head>
+<body>
 
-            <form onSubmit={handleSubmit} className="space-y-5 pt-2">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="fname">ชื่อ</Label>
-                  <Input id="fname" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="ชื่อจริง" maxLength={50} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lname">นามสกุล</Label>
-                  <Input id="lname" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="นามสกุล" maxLength={50} />
-                </div>
-              </div>
+<header>
+  <button class="settings-top-btn" onclick="openSettingsLock()">⚙️ ตั้งค่า</button>
+  <div class="badge">🌸 บริการด่วน · รับงานทุกชิ้น</div>
+  <h1 class="hero-title">ร้าน<span class="accent">กู้ชีพ</span>งานค้าง</h1>
+  <p class="tagline">ส่งงานช้า? ค้างมานาน? เราช่วยได้ · รวดเร็ว · มืออาชีพ</p>
+  <button class="cta-btn" onclick="openModal()">🚀 เริ่มจ้างงาน</button>
+</header>
 
-              <div className="space-y-2 text-left">
-                <Label>เลือกงาน (เลือกได้ 1 อย่าง)</Label>
-                <RadioGroup value={job} onValueChange={setJob} className="space-y-2">
-                  {jobNames.map((name) => {
-                    const selected = job === name;
-                    return (
-                      <label
-                        key={name}
-                        htmlFor={`job-${name}`}
-                        className={`block p-3 rounded-lg border cursor-pointer transition ${
-                          selected ? "border-[hsl(var(--neon))] bg-[hsl(var(--neon)/0.1)]" : "border-border hover:border-primary/40"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <RadioGroupItem value={name} id={`job-${name}`} />
-                          <span className="font-semibold flex-1">{name}</span>
-                          {selected && <Check className="w-4 h-4 text-primary" />}
-                        </div>
-                        {selected && jobDescs[name] && (
-                          <p className="text-xs text-muted-foreground mt-2 pl-7 whitespace-pre-line">
-                            {jobDescs[name]}
-                          </p>
-                        )}
-                      </label>
-                    );
-                  })}
-                </RadioGroup>
-              </div>
+<div class="counter-bar">
+  <div class="counter-inner">
+    <span class="counter-num" id="counter-display">0</span>
+    <span class="counter-label">คน ที่ไว้วางใจเรา 🌸</span>
+  </div>
+</div>
 
-              <div className="space-y-3 text-left">
-                <Label>วิธีชำระเงิน</Label>
-                <RadioGroup value={payment} onValueChange={(v) => handlePaymentChange(v as "cash" | "transfer")} className="grid grid-cols-2 gap-3">
-                  <label htmlFor="cash" className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition ${payment === "cash" ? "border-[hsl(var(--neon))] bg-[hsl(var(--neon)/0.1)]" : "border-border"}`}>
-                    <RadioGroupItem value="cash" id="cash" />
-                    <span>💵 เงินสด</span>
-                  </label>
-                  <label htmlFor="transfer" className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition ${payment === "transfer" ? "border-[hsl(var(--neon))] bg-[hsl(var(--neon)/0.1)]" : "border-border"}`}>
-                    <RadioGroupItem value="transfer" id="transfer" />
-                    <span>🏦 โอนจ่าย</span>
-                  </label>
-                </RadioGroup>
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">💰 ราคา<span>บริการ</span></div>
+    <div class="section-sub">โปรโมชั่นพิเศษ! ไม่ถึง 4 หน้า เริ่มต้นเพียง 20฿ ✨</div>
+  </div>
+  <div class="price-grid">
+    <div class="price-card">
+      <div class="price-card-header"><div class="price-card-icon">📝</div><div class="price-card-title">งานแก้ข้อสอบ</div></div>
+      <div class="price-row"><span class="price-row-label">จดน้อย</span><span class="price-row-val">7฿/หน้า</span></div>
+      <div class="price-row"><span class="price-row-label">จดเยอะ</span><span class="price-row-val">12฿/หน้า</span></div>
+      <div class="price-row"><span class="price-row-label">มีวาดรูป (ครั้งเดียว)</span><span class="price-row-val">+4฿</span></div>
+      <span class="promo-badge">🎉 โปรโมชั่น ไม่ถึง 4 หน้า = 20฿</span>
+    </div>
+    <div class="price-card">
+      <div class="price-card-header"><div class="price-card-icon">🔴</div><div class="price-card-title">งานแก้ 0 ร มส</div></div>
+      <div class="price-row"><span class="price-row-label">จดน้อย</span><span class="price-row-val">9฿/หน้า</span></div>
+      <div class="price-row"><span class="price-row-label">จดเยอะ</span><span class="price-row-val">14฿/หน้า</span></div>
+      <div class="price-row"><span class="price-row-label">มีวาดรูป (ครั้งเดียว)</span><span class="price-row-val">+6฿</span></div>
+      <span class="promo-badge">🎉 โปรโมชั่น ไม่ถึง 4 หน้า = 20฿</span>
+    </div>
+    <div class="price-card">
+      <div class="price-card-header"><div class="price-card-icon">⏰</div><div class="price-card-title">งานค้าง</div></div>
+      <div class="price-row"><span class="price-row-label">จดน้อย</span><span class="price-row-val">7฿/หน้า</span></div>
+      <div class="price-row"><span class="price-row-label">จดเยอะ</span><span class="price-row-val">12฿/หน้า</span></div>
+      <div class="price-row"><span class="price-row-label">มีวาดรูป (ครั้งเดียว)</span><span class="price-row-val">+4฿</span></div>
+      <span class="promo-badge">🎉 โปรโมชั่น ไม่ถึง 4 หน้า = 20฿</span>
+    </div>
+    <div class="price-card">
+      <div class="price-card-header"><div class="price-card-icon">🎨</div><div class="price-card-title">ใบงาน Canva</div></div>
+      <div class="price-row"><span class="price-row-label">เนื้อหา/หัวข้อน้อย</span><span class="price-row-val">9฿</span></div>
+      <div class="price-row"><span class="price-row-label">เนื้อหา/หัวข้อเยอะ</span><span class="price-row-val">14฿</span></div>
+      <span class="promo-badge">🎉 โปรโมชั่น ไม่ถึง 4 หน้า = 20฿</span>
+    </div>
+    <div class="price-card">
+      <div class="price-card-header"><div class="price-card-icon">🖥️</div><div class="price-card-title">สไลด์พรีเซน Canva</div></div>
+      <div class="price-row"><span class="price-row-label">เนื้อหา/หัวข้อน้อย</span><span class="price-row-val">9฿/หน้า</span></div>
+      <div class="price-row"><span class="price-row-label">เนื้อหา/หัวข้อเยอะ</span><span class="price-row-val">14฿/หน้า</span></div>
+      <span class="promo-badge">🎉 โปรโมชั่น ไม่ถึง 4 หน้า = 20฿</span>
+    </div>
+  </div>
+</div>
 
-                {payment === "cash" && cashAck && (
-                  <div className="text-xs text-yellow-500 flex items-center gap-1">
-                    <Check className="w-3 h-3" /> รับทราบเงื่อนไขชำระเงินสดแล้ว
-                  </div>
-                )}
+<div class="divider"></div>
 
-                {payment === "transfer" && (
-                  <div className="space-y-2 p-3 rounded-lg border border-yellow-500/40 bg-yellow-500/10">
-                    <p className="text-xs text-yellow-200 flex items-start gap-1">
-                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                      <span>โปรดโอนเงินก่อน แล้วแนบรูปสลิปด้านล่าง จึงจะกดยืนยันได้</span>
-                    </p>
-                    {qrDataUrl ? (
-                      <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-white">
-                        <img src={qrDataUrl} alt="QR Code ชำระเงิน" className="w-48 h-48 object-contain" />
-                        <p className="text-xs text-black/70">สแกน QR เพื่อโอนเงิน</p>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-yellow-200/80 italic">— ยังไม่ได้ตั้งค่า QR Code —</p>
-                    )}
-                    <label className="flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed border-yellow-500/50 cursor-pointer hover:bg-yellow-500/10 transition">
-                      <Upload className="w-4 h-4" />
-                      <span className="text-sm">{slipPreview ? "เปลี่ยนรูปสลิป" : "แนบรูปสลิป (สูงสุด 5MB)"}</span>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleSlipUpload} />
-                    </label>
-                    {slipPreview && (
-                      <img src={slipPreview} alt="สลิปการโอน" className="w-full max-h-48 object-contain rounded border border-border" />
-                    )}
-                  </div>
-                )}
-              </div>
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">🔍 เช็ค<span>สถานะงาน</span></div>
+    <div class="section-sub">ค้นหาด้วยชื่อของคุณ</div>
+  </div>
+  <div class="status-wrap">
+    <div class="status-search-box">
+      <input type="text" id="status-search-input" placeholder="กรอกชื่อหรือนามสกุล..." onkeydown="if(event.key==='Enter')searchStatus()" />
+      <button class="status-search-btn" onclick="searchStatus()">🔍 ค้นหา</button>
+    </div>
+    <div id="status-result"></div>
+  </div>
+</div>
 
-              <AlertDialog open={showCashWarn} onOpenChange={setShowCashWarn}>
-                <AlertDialogContent className="border-yellow-500/50 bg-yellow-500/10 backdrop-blur">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle className="text-yellow-300 flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5" /> ⚠️ เตือน
-                    </AlertDialogTitle>
-                    <AlertDialogDescription className="text-yellow-100">
-                      โปรดนำเงินมาชำระให้เราภายใน 1-2 วัน หลังจากจ้างงาน
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogAction
-                      className="bg-yellow-500 text-black hover:bg-yellow-400"
-                      onClick={() => { setCashAck(true); setShowCashWarn(false); }}
-                    >
-                      รับทราบ
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+<div class="divider"></div>
 
-              <DialogFooter>
-                <button type="submit" disabled={submitting} className="neon-btn w-full py-3 rounded-lg font-bold uppercase tracking-wider disabled:opacity-60">
-                  {submitting ? "กำลังส่ง..." : "ยืนยันการจ้างงาน"}
-                </button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">💬 รีวิว<span>จากลูกค้า</span></div>
+    <div class="section-sub">ความประทับใจจากลูกค้าจริง ✨</div>
+  </div>
+  <div class="reviews-slider-wrap">
+    <div class="reviews-track" id="reviews-track"></div>
+  </div>
+</div>
 
-        <Reviews />
+<!-- MODAL จ้างงาน -->
 
-        <div className="pt-8 space-y-3">
-          <p className="text-sm text-muted-foreground">ติดต่อด่วน</p>
-          <div className="flex items-center justify-center gap-3">
-            <a
-              href="https://instagram.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-primary-foreground bg-gradient-to-r from-[hsl(335_80%_60%)] to-[hsl(20_90%_60%)] shadow-lg shadow-primary/30 hover:scale-105 transition"
-            >
-              <Instagram className="w-5 h-5" />
-              Instagram
-            </a>
-            <a
-              href="https://facebook.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-white bg-[hsl(220_85%_55%)] shadow-lg shadow-[hsl(220_85%_55%/0.4)] hover:scale-105 transition"
-            >
-              <Facebook className="w-5 h-5" />
-              Facebook
-            </a>
-          </div>
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div id="step1">
+      <button class="close-btn" onclick="closeModal()">✕</button>
+      <div class="modal-title">📋 จ้างงาน</div>
+      <div class="modal-sub">กรอกข้อมูลและเลือกงานที่ต้องการ</div>
+      <label class="form-label">ชื่อ</label>
+      <input class="form-input" id="firstName" type="text" placeholder="ชื่อของคุณ" />
+      <label class="form-label">นามสกุล</label>
+      <input class="form-input" id="lastName" type="text" placeholder="นามสกุลของคุณ" />
+      <label class="form-label">ประเภทงาน</label>
+      <div class="job-grid">
+        <div class="job-option" onclick="selectJob(this,'งานแก้ข้อสอบ')"><span class="job-icon">📝</span>แก้ข้อสอบ</div>
+        <div class="job-option" onclick="selectJob(this,'งานแก้ 0 ร มส')"><span class="job-icon">🔴</span>แก้ 0 ร มส</div>
+        <div class="job-option" onclick="selectJob(this,'งานค้าง')"><span class="job-icon">⏰</span>งานค้าง</div>
+        <div class="job-option" onclick="selectJob(this,'ใบงาน Canva')"><span class="job-icon">🎨</span>ใบงาน Canva</div>
+        <div class="job-option" style="grid-column:span 2" onclick="selectJob(this,'สไลด์พรีเซน Canva')"><span class="job-icon">🖥️</span>สไลด์พรีเซน Canva</div>
+      </div>
+      <div id="job-error" class="error-msg" style="display:none;">⚠️ กรุณาเลือกประเภทงาน</div>
+      <label class="form-label">วิธีชำระเงิน</label>
+      <div class="payment-grid">
+        <div class="payment-option" id="pay-cash" onclick="selectPayment('cash')"><span class="payment-icon">💵</span><div class="payment-label">เงินสด</div><div class="payment-desc">ชำระหลังจ้างงาน</div></div>
+        <div class="payment-option" id="pay-transfer" onclick="selectPayment('transfer')"><span class="payment-icon">📱</span><div class="payment-label">โอนเงิน</div><div class="payment-desc">สแกน QR พร้อมเพย์</div></div>
+      </div>
+      <div id="pay-error" class="error-msg" style="display:none;">⚠️ กรุณาเลือกวิธีชำระเงิน</div>
+      <div id="cash-section" style="display:none;">
+        <div class="cash-alert">
+          <div class="cash-alert-icon">⚠️</div>
+          <div class="cash-alert-title">แจ้งเตือนการชำระเงินสด</div>
+          <div class="cash-alert-text">โปรดนำเงินมาชำระให้เราหลังจากจ้างงาน<br><strong>ภายใน 1-2 วัน</strong> นับจากวันที่ส่งคำสั่งจ้างงาน</div>
+          <label class="cash-acknowledge"><input type="checkbox" id="cash-checkbox" onchange="toggleSubmitBtn()" /><span class="cash-acknowledge-text">✅ รับทราบ จะนำเงินมาชำระภายใน 1-2 วัน</span></label>
         </div>
       </div>
-    </main>
-  );
-};
+      <div id="transfer-section" style="display:none;">
+        <div class="transfer-box">
+          <div class="transfer-title">📲 สแกน QR โอนเงิน</div>
+          <div class="transfer-note">พร้อมเพย์ / PromptPay</div>
+          <div class="qr-placeholder"><img id="qr-img" src="" alt="QR" style="display:none;" /><span id="qr-placeholder-text">🖼️ QR Code<br>ตั้งค่าในเมนู ⚙️</span></div>
+          <div class="transfer-note" style="color:#4b5563;">โอนแล้ว กรุณาแนบสลิปด้านล่าง</div>
+          <div class="slip-upload-area" id="slip-area">
+            <input type="file" accept="image/*,application/pdf,.heic,.heif" id="slip-input" onchange="handleSlipUpload(this)" />
+            <div class="slip-upload-icon">📎</div>
+            <div class="slip-upload-text">แนบสลิปโอนเงิน</div>
+            <div class="slip-upload-sub">📸 แคปหน้าจอหรือถ่ายรูปสลิปได้เลย</div>
+            <img id="slip-preview" class="slip-preview" style="display:none;" />
+          </div>
+          <div id="slip-error" class="error-msg" style="margin-top:8px;margin-bottom:0;display:none;">⚠️ กรุณาแนบสลิปโอนเงิน</div>
+        </div>
+      </div>
+      <button class="submit-btn" id="submit-btn" onclick="submitJob()">✅ ส่งจ้างงาน</button>
+    </div>
+    <div id="step-success" style="display:none;">
+      <div class="success-box">
+        <div class="success-icon">🎉</div>
+        <div class="success-title">ส่งคำสั่งจ้างงานแล้ว!</div>
+        <div class="success-text" id="success-msg"></div>
+        <br><button class="submit-btn btn-rose" onclick="closeModal()" style="margin-top:12px;">ปิด</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-export default Index;
+<!-- MODAL รหัส -->
+
+<div class="modal-overlay" id="settings-lock-modal">
+  <div class="modal" style="max-width:380px;">
+    <button class="close-btn" onclick="closeSettingsLock()">✕</button>
+    <div class="lock-overlay"><div class="lock-icon">🔐</div></div>
+    <div class="modal-title">ตั้งค่าระบบ</div>
+    <div class="modal-sub">ใส่รหัสผ่านเพื่อเข้าถึงการตั้งค่า</div>
+    <label class="form-label">รหัสผ่าน</label>
+    <input class="form-input" id="settings-password" type="password" placeholder="ใส่รหัสผ่าน..." onkeydown="if(event.key==='Enter')checkSettingsPass()" />
+    <div id="settings-lock-error" class="error-msg" style="display:none;">❌ รหัสผ่านไม่ถูกต้อง</div>
+    <button class="submit-btn btn-rose" onclick="checkSettingsPass()">🔓 เข้าถึงการตั้งค่า</button>
+  </div>
+</div>
+
+<!-- MODAL ตั้งค่า -->
+
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal" style="max-width:580px;">
+    <button class="close-btn" onclick="closeSettings()">✕</button>
+    <div class="modal-title">⚙️ การตั้งค่า</div>
+    <div class="modal-sub">แก้ไขข้อมูลและการตั้งค่าต่างๆ</div>
+
+```
+<div class="settings-section">
+  <div class="settings-section-title">📲 Telegram Bot</div>
+  <div class="tg-box">
+    <div style="font-size:0.82rem;font-weight:600;color:#0369a1;margin-bottom:4px;">Bot Token</div>
+    <div class="tg-row"><input type="text" id="tg-token-input" placeholder="123456:ABC-DEF..." /></div>
+    <div style="font-size:0.82rem;font-weight:600;color:#0369a1;margin:8px 0 4px;">Chat ID</div>
+    <div class="tg-row"><input type="text" id="tg-chatid-input" placeholder="เช่น 7229646392" /><button class="tg-save-btn" onclick="saveTelegramSettings()">บันทึก ✓</button></div>
+    <div id="tg-status" style="margin-top:8px;font-size:0.82rem;"></div>
+  </div>
+</div>
+
+<!-- ตัวนับแบบ read-only แสดงจากงาน done จริงๆ -->
+<div class="settings-section">
+  <div class="settings-section-title">🔢 จำนวนลูกค้า</div>
+  <div class="counter-info-box">
+    <div class="counter-info-num" id="settings-done-count">0</div>
+    <div class="counter-info-label">งานที่เสร็จแล้ว (สถานะ ✅ เสร็จแล้ว)</div>
+    <div class="counter-info-sub">ตัวเลขนี้นับอัตโนมัติจากงานจริง ไม่สามารถแก้ไขได้</div>
+  </div>
+</div>
+
+<div class="settings-section">
+  <div class="settings-section-title">📋 จัดการสถานะงาน</div>
+  <div id="admin-orders-list"><p style="color:#9ca3af;font-size:0.9rem;">ยังไม่มีคำสั่งจ้างงาน</p></div>
+</div>
+
+<div class="settings-section">
+  <div class="settings-section-title">✏️ แก้ไขข้อมูลเว็บ</div>
+  <div class="edit-field"><label>ชื่อร้าน</label><input type="text" id="edit-shop-name" /></div>
+  <div class="edit-field"><label>คำโฆษณา</label><input type="text" id="edit-tagline" /></div>
+  <div class="edit-field"><label>ลิงก์ Facebook</label><input type="text" id="edit-fb" /></div>
+  <div class="edit-field"><label>ลิงก์ Instagram</label><input type="text" id="edit-ig" /></div>
+  <button class="submit-btn btn-rose" onclick="saveWebsiteSettings()">💾 บันทึก</button>
+</div>
+
+<div class="settings-section">
+  <div class="settings-section-title">💬 จัดการรีวิว</div>
+  <div id="admin-reviews-list"></div>
+</div>
+
+<div class="settings-section">
+  <div class="settings-section-title">📱 QR Code โอนเงิน</div>
+  <div style="text-align:center;">
+    <div style="width:160px;height:160px;margin:0 auto 14px;border:2px dashed #7dd3fc;border-radius:16px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#f0f9ff;">
+      <img id="admin-qr-preview" src="" style="display:none;width:100%;height:100%;object-fit:contain;" />
+      <span id="admin-qr-placeholder" style="font-size:0.82rem;color:var(--sky);font-weight:600;">ยังไม่มี QR Code</span>
+    </div>
+    <label style="display:inline-block;background:linear-gradient(135deg,var(--sky),var(--sky-dark));color:#fff;padding:10px 24px;border-radius:100px;cursor:pointer;font-family:'Mitr',sans-serif;font-weight:600;font-size:0.9rem;">
+      📷 เลือกรูป QR Code
+      <input type="file" accept="image/*" style="display:none;" onchange="uploadQR(this)" />
+    </label>
+    <div id="qr-upload-status" style="margin-top:8px;font-size:0.82rem;color:var(--sky);"></div>
+  </div>
+</div>
+
+<button class="submit-btn btn-gray" onclick="closeSettings()">ปิด</button>
+```
+
+  </div>
+</div>
+
+<!-- MODAL ลบรีวิว -->
+
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal" style="max-width:360px;">
+    <button class="close-btn" onclick="closeDeleteModal()">✕</button>
+    <div class="modal-title">🗑️ ยืนยันการลบ</div>
+    <div class="modal-sub">คุณต้องการลบรีวิวนี้ใช่ไหม?</div>
+    <div style="display:flex;gap:10px;">
+      <button class="submit-btn btn-red" onclick="confirmDelete()">🗑️ ลบเลย</button>
+      <button class="submit-btn btn-gray" onclick="closeDeleteModal()">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<div class="contact-section" id="contact-section">
+  <div class="contact-title">📲 ติดต่อเราได้ที่</div>
+  <div class="social-links">
+    <a id="fb-link" href="https://www.facebook.com/nattaphum.uppati/" target="_blank" class="social-btn social-btn-fb">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+      Facebook
+    </a>
+    <a id="ig-link" href="https://www.instagram.com/naxxaphum_?igsh=MTdybDRmcGM0azlzbw%3D%3D&utm_source=qr" target="_blank" class="social-btn social-btn-ig">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+      Instagram
+    </a>
+  </div>
+</div>
+<footer><p>© 2024 <span>ร้านกู้ชีพงานค้าง</span> · ทำด้วยใจ ส่งทันเวลา 🌸</p></footer>
+
+<script>
+const ADMIN_PASSWORD = 'jame141053';
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbz0US9DsE0vAlQ9kkgJejkcLTmMWcasawuYcPQvBcfrRuKg1nm7FC2ap75nya0nnp9V/exec';
+
+let selectedJob = '', selectedPayment = '', slipBase64 = '', deleteTargetId = null;
+let tgToken = localStorage.getItem('tgToken') || '8548512042:AAEAIIor5ofS5iw2aWv2muxChqnSAf0ji5w';
+let tgChatId = localStorage.getItem('tgChatId') || '7229646392';
+
+// ======== ORDERS (Google Sheets + localStorage fallback) ========
+function loadOrdersLocal() {
+  try { return JSON.parse(localStorage.getItem('orders') || '[]'); } catch(e) { return []; }
+}
+function saveOrdersLocal(orders) {
+  localStorage.setItem('orders', JSON.stringify(orders));
+}
+
+async function fetchOrdersFromSheet() {
+  try {
+    const r = await fetch(SHEET_URL + '?action=getOrders');
+    const d = await r.json();
+    if (d.ok) { saveOrdersLocal(d.data); return d.data; }
+  } catch(e) {}
+  return loadOrdersLocal();
+}
+
+function countDone() {
+  return loadOrdersLocal().filter(o => o.status === 'done').length;
+}
+
+function updateCounterDisplay() {
+  const n = countDone();
+  document.getElementById('counter-display').textContent = n;
+  const el = document.getElementById('settings-done-count');
+  if (el) el.textContent = n;
+}
+
+// ======== SEARCH STATUS ========
+async function searchStatus() {
+  const q = document.getElementById('status-search-input').value.trim().toLowerCase();
+  const result = document.getElementById('status-result');
+  if (!q) { result.innerHTML = '<div class="status-empty">กรุณากรอกชื่อเพื่อค้นหา</div>'; return; }
+  result.innerHTML = '<div class="status-empty">🔍 กำลังค้นหา...</div>';
+  const orders = await fetchOrdersFromSheet();
+  updateCounterDisplay();
+  const filtered = orders.filter(o => (o.name || '').toLowerCase().includes(q));
+  if (!filtered.length) { result.innerHTML = '<div class="status-empty">❌ ไม่พบข้อมูล กรุณาตรวจสอบชื่อ</div>'; return; }
+  const badges = { pending:'status-pending', working:'status-working', done:'status-done' };
+  const labels = { pending:'⏳ รอดำเนินการ', working:'🔧 กำลังทำ', done:'✅ เสร็จแล้ว' };
+  result.innerHTML = filtered.map(o => `
+    <div class="status-card">
+      <div class="status-card-name">👤 ${o.name}</div>
+      <div class="status-card-job">📝 ${o.job} · 💳 ${o.pay}</div>
+      <div class="status-card-job" style="color:#9ca3af;font-size:0.8rem;">⏰ ${o.time}</div>
+      <span class="status-badge ${badges[o.status] || 'status-pending'}">${labels[o.status] || '⏳ รอดำเนินการ'}</span>
+    </div>`).join('');
+}
+
+// ======== ADMIN ORDERS ========
+async function renderAdminOrders() {
+  const c = document.getElementById('admin-orders-list');
+  c.innerHTML = '<p style="color:#9ca3af;font-size:0.9rem;">⏳ กำลังโหลด...</p>';
+  const orders = await fetchOrdersFromSheet();
+  updateCounterDisplay();
+  if (!orders.length) { c.innerHTML = '<p style="color:#9ca3af;font-size:0.9rem;">ยังไม่มีคำสั่งจ้างงาน</p>'; return; }
+  c.innerHTML = orders.slice().reverse().map(o => `
+    <div class="status-admin-row">
+      <div class="status-admin-name">${o.name}<br><span style="font-weight:400;font-size:0.78rem;color:#9ca3af;">${o.job}</span></div>
+      <select class="status-select" onchange="updateOrderStatus('${o.id}',this.value)">
+        <option value="pending" ${o.status==='pending'?'selected':''}>⏳ รอดำเนินการ</option>
+        <option value="working" ${o.status==='working'?'selected':''}>🔧 กำลังทำ</option>
+        <option value="done" ${o.status==='done'?'selected':''}>✅ เสร็จแล้ว</option>
+      </select>
+      <button class="del-order-btn" onclick="deleteOrder('${o.id}')">🗑️</button>
+    </div>`).join('');
+}
+
+async function updateOrderStatus(id, status) {
+  // อัปเดต local ก่อนให้ UI ตอบสนองทันที
+  const orders = loadOrdersLocal();
+  const idx = orders.findIndex(o => o.id === id);
+  if (idx !== -1) { orders[idx].status = status; saveOrdersLocal(orders); }
+  updateCounterDisplay();
+  // ส่งไป Sheet
+  try {
+    await fetch(SHEET_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'updateStatus', id, status })
+    });
+  } catch(e) {}
+}
+
+async function deleteOrder(id) {
+  saveOrdersLocal(loadOrdersLocal().filter(o => o.id !== id));
+  updateCounterDisplay();
+  try {
+    await fetch(SHEET_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'deleteOrder', id })
+    });
+  } catch(e) {}
+  renderAdminOrders();
+}
+
+// ======== REVIEWS ========
+const defaultReviews = [
+  {id:1,name:'น้องมิน',role:'นักศึกษาปี 2',stars:5,text:'ส่งงานทันเดดไลน์แน่นอน ช่วยแก้ร. มส. ให้หมดเลย ขอบคุณมากนะคะ!',emoji:'🧑‍🎓'},
+  {id:2,name:'พี่โอ๊ต',role:'นักศึกษาปี 4',stars:5,text:'สไลด์ Canva สวยมากเลยครับ ทำเสร็จไวด้วย ประหยัดเวลาได้เยอะ',emoji:'👨‍💼'},
+  {id:3,name:'พี่ฝ้าย',role:'นักศึกษาปี 3',stars:4,text:'ใบงาน Canva ออกมาดูดีมากค่ะ ราคาเหมาะสม แนะนำเลย!',emoji:'👩‍🏫'},
+  {id:4,name:'น้องเฟิร์น',role:'นักศึกษาปี 1',stars:5,text:'แก้ข้อสอบได้ครบทุกข้อ เจ้าของร้านใจดี ตอบไวมาก ประทับใจมากๆ',emoji:'🧑‍💻'},
+  {id:5,name:'พี่เจมส์',role:'นักศึกษาปี 3',stars:5,text:'ทำงานเสร็จเร็วกว่ากำหนดมาก! ผลงานสวยงาม ราคาคุ้มค่ามาก',emoji:'😊'}
+];
+function loadReviews() { const s = localStorage.getItem('reviews'); return s ? JSON.parse(s) : defaultReviews; }
+function saveReviews(r) { localStorage.setItem('reviews', JSON.stringify(r)); }
+function renderReviews() {
+  const reviews = loadReviews(), track = document.getElementById('reviews-track');
+  if (!reviews.length) { track.innerHTML = '<div style="padding:40px;color:#9ca3af;">ยังไม่มีรีวิว</div>'; return; }
+  const doubled = [...reviews, ...reviews];
+  track.innerHTML = doubled.map(r => `
+    <div class="review-card">
+      <div class="reviewer-info">
+        <div class="reviewer-avatar">${r.emoji||'😊'}</div>
+        <div><div class="reviewer-name">${r.name}</div><div class="reviewer-role">${r.role}</div></div>
+      </div>
+      <div class="stars">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
+      <div class="review-text">${r.text}</div>
+    </div>`).join('');
+  track.style.animationDuration = (reviews.length * 7) + 's';
+}
+function renderAdminReviews() {
+  const reviews = loadReviews(), c = document.getElementById('admin-reviews-list');
+  if (!reviews.length) { c.innerHTML = '<p style="color:#9ca3af;font-size:0.9rem;">ยังไม่มีรีวิว</p>'; return; }
+  c.innerHTML = reviews.map(r => `
+    <div class="status-admin-row">
+      <div style="font-size:1.3rem;">${r.emoji||'😊'}</div>
+      <div style="flex:1;"><div style="font-weight:600;font-size:0.88rem;">${r.name}</div><div style="font-size:0.78rem;color:#9ca3af;">${r.text.substring(0,50)}...</div></div>
+      <button onclick="askDelete(${r.id})" class="del-order-btn">🗑️</button>
+    </div>`).join('');
+}
+function askDelete(id) { deleteTargetId = id; document.getElementById('delete-modal').classList.add('active'); }
+function closeDeleteModal() { document.getElementById('delete-modal').classList.remove('active'); deleteTargetId = null; }
+function confirmDelete() { saveReviews(loadReviews().filter(r => r.id !== deleteTargetId)); renderReviews(); renderAdminReviews(); closeDeleteModal(); }
+
+// ======== SETTINGS ========
+function openSettingsLock() {
+  document.getElementById('settings-lock-modal').classList.add('active');
+  document.getElementById('settings-password').value = '';
+  document.getElementById('settings-lock-error').style.display = 'none';
+  setTimeout(() => document.getElementById('settings-password').focus(), 100);
+}
+function closeSettingsLock() { document.getElementById('settings-lock-modal').classList.remove('active'); }
+function checkSettingsPass() {
+  if (document.getElementById('settings-password').value === ADMIN_PASSWORD) {
+    closeSettingsLock(); openSettings();
+  } else {
+    document.getElementById('settings-lock-error').style.display = 'block';
+    document.getElementById('settings-password').value = '';
+  }
+}
+function openSettings() {
+  document.getElementById('settings-modal').classList.add('active');
+  document.getElementById('tg-token-input').value = tgToken;
+  document.getElementById('tg-chatid-input').value = tgChatId;
+  const ws = document.getElementById('tg-status');
+  ws.innerHTML = tgToken && tgChatId ? '✅ ตั้งค่า Telegram แล้ว' : '⚠️ ยังไม่ได้ตั้งค่า';
+  ws.style.color = tgToken && tgChatId ? '#059669' : '#d97706';
+  const saved = JSON.parse(localStorage.getItem('siteSettings') || '{}');
+  document.getElementById('edit-shop-name').value = saved.shopName || 'กู้ชีพงานค้าง';
+  document.getElementById('edit-tagline').value = saved.tagline || 'ส่งงานช้า? ค้างมานาน? เราช่วยได้ · รวดเร็ว · มืออาชีพ';
+  document.getElementById('edit-fb').value = saved.fb || 'https://www.facebook.com/nattaphum.uppati/';
+  document.getElementById('edit-ig').value = saved.ig || 'https://www.instagram.com/naxxaphum_?igsh=MTdybDRmcGM0azlzbw%3D%3D&utm_source=qr';
+  // อัปเดตตัวนับใน settings
+  document.getElementById('settings-done-count').textContent = countDone();
+  const qrData = localStorage.getItem('qrCode');
+  document.getElementById('admin-qr-preview').src = qrData || '';
+  document.getElementById('admin-qr-preview').style.display = qrData ? 'block' : 'none';
+  document.getElementById('admin-qr-placeholder').style.display = qrData ? 'none' : 'block';
+  renderAdminReviews();
+  renderAdminOrders();
+}
+function closeSettings() { document.getElementById('settings-modal').classList.remove('active'); }
+function saveTelegramSettings() {
+  const token = document.getElementById('tg-token-input').value.trim();
+  const chatId = document.getElementById('tg-chatid-input').value.trim();
+  const s = document.getElementById('tg-status');
+  if (!token || !chatId) { s.innerHTML = '❌ กรุณาใส่ Token และ Chat ID'; s.style.color = '#ef4444'; return; }
+  tgToken = token; tgChatId = chatId;
+  localStorage.setItem('tgToken', token); localStorage.setItem('tgChatId', chatId);
+  s.innerHTML = '✅ บันทึกสำเร็จ!'; s.style.color = '#059669';
+}
+function saveWebsiteSettings() {
+  const shopName = document.getElementById('edit-shop-name').value.trim();
+  const tagline = document.getElementById('edit-tagline').value.trim();
+  const fb = document.getElementById('edit-fb').value.trim();
+  const ig = document.getElementById('edit-ig').value.trim();
+  localStorage.setItem('siteSettings', JSON.stringify({shopName, tagline, fb, ig}));
+  if (shopName) document.querySelector('.hero-title').innerHTML = 'ร้าน<span class="accent">' + shopName + '</span>';
+  if (tagline) document.querySelector('.tagline').textContent = tagline;
+  if (fb) document.getElementById('fb-link').href = fb;
+  if (ig) document.getElementById('ig-link').href = ig;
+  alert('✅ บันทึกแล้ว!');
+}
+function applySavedSettings() {
+  const saved = JSON.parse(localStorage.getItem('siteSettings') || '{}');
+  if (saved.shopName) document.querySelector('.hero-title').innerHTML = 'ร้าน<span class="accent">' + saved.shopName + '</span>';
+  if (saved.tagline) document.querySelector('.tagline').textContent = saved.tagline;
+  if (saved.fb) document.getElementById('fb-link').href = saved.fb;
+  if (saved.ig) document.getElementById('ig-link').href = saved.ig;
+}
+function uploadQR(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const data = e.target.result;
+    localStorage.setItem('qrCode', data);
+    document.getElementById('admin-qr-preview').src = data;
+    document.getElementById('admin-qr-preview').style.display = 'block';
+    document.getElementById('admin-qr-placeholder').style.display = 'none';
+    document.getElementById('qr-upload-status').textContent = '✅ อัปโหลดสำเร็จ!';
+    loadQRInModal();
+  };
+  reader.readAsDataURL(file);
+}
+function loadQRInModal() {
+  const qrData = localStorage.getItem('qrCode');
+  const img = document.getElementById('qr-img'), ph = document.getElementById('qr-placeholder-text');
+  if (qrData) { img.src = qrData; img.style.display = 'block'; if(ph) ph.style.display = 'none'; }
+  else { if(img) img.style.display = 'none'; if(ph) ph.style.display = 'block'; }
+}
+
+// ======== PAYMENT ========
+function selectPayment(type) {
+  selectedPayment = type;
+  document.getElementById('pay-error').style.display = 'none';
+  document.getElementById('pay-cash').className = 'payment-option' + (type==='cash' ? ' selected' : '');
+  document.getElementById('pay-transfer').className = 'payment-option' + (type==='transfer' ? ' selected-transfer' : '');
+  document.getElementById('cash-section').style.display = type==='cash' ? 'block' : 'none';
+  document.getElementById('transfer-section').style.display = type==='transfer' ? 'block' : 'none';
+  if (type==='cash') document.getElementById('cash-checkbox').checked = false;
+  if (type==='transfer') loadQRInModal();
+  toggleSubmitBtn();
+}
+function toggleSubmitBtn() {
+  document.getElementById('submit-btn').disabled = selectedPayment==='cash' ? !document.getElementById('cash-checkbox').checked : false;
+}
+function handleSlipUpload(input) {
+  const file = input.files[0]; if (!file) return;
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      slipBase64 = e.target.result;
+      const prev = document.getElementById('slip-preview');
+      prev.src = slipBase64; prev.style.display = 'block';
+      document.getElementById('slip-area').classList.add('has-file');
+      document.getElementById('slip-upload-text').textContent = '✅ แนบสลิปแล้ว';
+      document.getElementById('slip-upload-icon').textContent = '✅';
+      document.getElementById('slip-upload-sub').textContent = file.name;
+      document.getElementById('slip-error').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    slipBase64 = 'non-image:' + file.name;
+    document.getElementById('slip-area').classList.add('has-file');
+    document.getElementById('slip-upload-text').textContent = '✅ แนบไฟล์แล้ว';
+    document.getElementById('slip-upload-icon').textContent = '✅';
+    document.getElementById('slip-upload-sub').textContent = file.name;
+    document.getElementById('slip-error').style.display = 'none';
+  }
+}
+
+// ======== MODAL ========
+function openModal() {
+  document.getElementById('modal').classList.add('active');
+  document.getElementById('step1').style.display = 'block';
+  document.getElementById('step-success').style.display = 'none';
+  selectedJob = ''; selectedPayment = ''; slipBase64 = '';
+  document.querySelectorAll('.job-option').forEach(o => o.classList.remove('selected'));
+  document.getElementById('firstName').value = '';
+  document.getElementById('lastName').value = '';
+  document.getElementById('job-error').style.display = 'none';
+  document.getElementById('pay-error').style.display = 'none';
+  document.getElementById('cash-section').style.display = 'none';
+  document.getElementById('transfer-section').style.display = 'none';
+  document.getElementById('pay-cash').className = 'payment-option';
+  document.getElementById('pay-transfer').className = 'payment-option';
+  document.getElementById('submit-btn').disabled = false;
+  document.getElementById('slip-area').classList.remove('has-file');
+  document.getElementById('slip-upload-text').textContent = 'แนบสลิปโอนเงิน';
+  document.getElementById('slip-upload-icon').textContent = '📎';
+  document.getElementById('slip-upload-sub').textContent = '📸 แคปหน้าจอหรือถ่ายรูปสลิปได้เลย';
+  document.getElementById('slip-preview').style.display = 'none';
+  document.getElementById('slip-error').style.display = 'none';
+  document.getElementById('slip-input').value = '';
+}
+function closeModal() { document.getElementById('modal').classList.remove('active'); }
+function selectJob(el, job) {
+  document.querySelectorAll('.job-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected'); selectedJob = job;
+  document.getElementById('job-error').style.display = 'none';
+}
+
+// ======== SUBMIT ========
+async function submitJob() {
+  const first = document.getElementById('firstName').value.trim();
+  const last = document.getElementById('lastName').value.trim();
+  const btn = document.getElementById('submit-btn');
+  if (!first || !last) { alert('⚠️ กรุณากรอกชื่อ-นามสกุล'); return; }
+  if (!selectedJob) { document.getElementById('job-error').style.display = 'block'; return; }
+  if (!selectedPayment) { document.getElementById('pay-error').style.display = 'block'; return; }
+  if (selectedPayment==='cash' && !document.getElementById('cash-checkbox').checked) return;
+  if (selectedPayment==='transfer' && !slipBase64) { document.getElementById('slip-error').style.display = 'block'; return; }
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>กำลังส่ง...';
+  const payLabel = selectedPayment==='cash' ? '💵 เงินสด' : '📱 โอนเงิน';
+  const newOrder = {
+    id: Date.now().toString(),
+    name: `${first} ${last}`,
+    job: selectedJob,
+    pay: payLabel,
+    status: 'pending',
+    time: new Date().toLocaleString('th-TH')
+  };
+  // บันทึก local + ส่งไป Google Sheets
+  const orders = loadOrdersLocal();
+  orders.push(newOrder);
+  saveOrdersLocal(orders);
+  updateCounterDisplay();
+  try {
+    await fetch(SHEET_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'addOrder', ...newOrder }) });
+  } catch(e) {}
+
+  // ส่ง Telegram
+  let tgSent = false;
+  if (tgToken && tgChatId) {
+    try {
+      const msg = `🌸 มีงานจ้างใหม่!\n\n👤 ชื่อ: ${first} ${last}\n📝 งาน: ${selectedJob}\n💳 ชำระ: ${payLabel}\n⏰ เวลา: ${new Date().toLocaleString('th-TH')}`;
+      const apiBase = `https://api.telegram.org/bot${tgToken}`;
+      const res = await fetch(`${apiBase}/sendMessage`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({chat_id:tgChatId, text:msg})
+      });
+      const data = await res.json();
+      tgSent = data.ok;
+      if (selectedPayment==='transfer' && slipBase64 && !slipBase64.startsWith('non-image:') && data.ok) {
+        try {
+          const blob = await (await fetch(slipBase64)).blob();
+          const form = new FormData();
+          form.append('chat_id', tgChatId);
+          form.append('photo', blob, 'slip.jpg');
+          form.append('caption', `🧾 สลิปโอนเงิน จาก ${first} ${last}`);
+          await fetch(`${apiBase}/sendPhoto`, {method:'POST', body:form});
+        } catch(e) {}
+      }
+    } catch(e) {}
+  }
+  showSuccess(first, last, selectedJob, payLabel, tgSent);
+  btn.disabled = false; btn.innerHTML = '✅ ส่งจ้างงาน';
+}
+
+function showSuccess(first, last, job, pay, sent) {
+  document.getElementById('step1').style.display = 'none';
+  document.getElementById('step-success').style.display = 'block';
+  document.getElementById('success-msg').innerText = sent
+    ? `คุณ ${first} ${last}\nส่งคำสั่งจ้างงาน "${job}" เรียบร้อยแล้ว\nวิธีชำระ: ${pay}\nแจ้งเตือน Telegram แล้ว! 📲\n\nเช็คสถานะได้ที่หน้าเว็บ 🔍`
+    : `คุณ ${first} ${last}\nส่งคำสั่งจ้างงาน "${job}" แล้ว\nวิธีชำระ: ${pay}\n\nเช็คสถานะได้ที่หน้าเว็บ 🔍`;
+}
+
+// ======== CLOSE ON BACKDROP ========
+['modal','settings-lock-modal','settings-modal','delete-modal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('active');
+  });
+});
+
+// ======== INIT ========
+updateCounterDisplay();
+renderReviews();
+applySavedSettings();
+fetchOrdersFromSheet().then(() => updateCounterDisplay());
+</script>
+
+</body>
+</html>
